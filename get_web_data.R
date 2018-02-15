@@ -2,6 +2,7 @@
 library(rvest)
 library(lubridate)
 library(httr)
+library(rebus)
 
 #starting with static url
 url<-read_html("https://blogs.iit.edu/public_safety/2018/01/")
@@ -22,7 +23,8 @@ getLinks<-function(startdate,endDate){
   links<-c(paste0("https://blogs.iit.edu/public_safety/",timeFrame,"/"))
   return (links)
 }
-
+#test function
+#link<-getLinks(startDate, endDate)
 
 
 #instantiating empty vector to store links to process
@@ -47,11 +49,13 @@ getLinksPages <- function(link){
   return (linkList)
 }
 #get all links to parse with existing pages
-linkList <- lapply(links, getLinksPages)
+linkList <- lapply(link, getLinksPages)
+linkList
+
 
 #function 'xtrText' takes xml_node as input
 #and returns content of type vector
-xtrText <- fucntion(url){
+xtrText <- function(url){
   content<-url %>% 
   html_nodes(".content") %>%   #extract content from elements of class '.content'
   html_text()
@@ -68,6 +72,8 @@ xtrText <- fucntion(url){
 
 return(content)
 }
+#test function
+#xtrText(url)
 
 
 #initializing empty df to store IIT incidents
