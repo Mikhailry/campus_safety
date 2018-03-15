@@ -25,9 +25,8 @@ getLinks<-function(startdate,endDate){
   return (links)
 }
 
-#test function
+#get links function for the defined timeframe
 link<-getLinks(startDate, endDate)
-
 
 #instantiating empty vector to store links to process
 linkList<-c()
@@ -81,17 +80,16 @@ return(content2xtr)
 #extract posts from all pages (links)
 #testLinkList<-linkList[86]
 content2xtr<-sapply(linkList,xtrText)
-content2xtr
 
 #==============================
 #test incident extraction
-#pattern2<-"incident type" %R% zero_or_more(printable()) %R% #incident type
-#  repeated(SPC,1,3) %R% zero_or_more(printable()) %R% #location and date
-#  repeated(SPC,1,3) %R% zero_or_more(printable()) %R% #notes
-#  repeated(SPC,1,3) %R% zero_or_more(printable())
+pattern2<-"incident type" %R% zero_or_more(printable()) %R% #incident type
+  repeated(SPC,1,3) %R% zero_or_more(printable()) %R% #location and date
+  repeated(SPC,1,3) %R% optional(zero_or_more(printable()) %R% #disposition
+  repeated(SPC,1,3)) %R% zero_or_more(printable()) #notes
 #
-#jan2015<-content2xtr[[1]]
-#str_view(content2xtr[[1]], pattern2)
+jan2015<-content2xtr[[1]]
+str_view_all(content2xtr[[5]], pattern2)
 #=============================
 
 
