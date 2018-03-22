@@ -1,0 +1,149 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library('readxl')
+library(xlsx)
+setwd(gsub("\\\\","//", readClipboard()))
+IIT_crime <- as.data.frame(read_xlsx("Crime_2014toPres_IIT area.xlsx",1))
+UC_crime <- as.data.frame(read_xlsx("Crime_2014toPres_UC area.xlsx",1))
+
+```
+
+```{r}
+library(plyr)
+dim(IIT_crime)
+
+#Finding the columns which have NA values in them
+colnames(IIT_crime)[colSums(is.na(IIT_crime))>0]
+IIT_crime[is.na(IIT_crime$`Location Description`),]
+unique(IIT_crime$`Location Description`)#Identifying types of Location Descriptions
+#Replacing NA value as "OTHER"
+IIT_crime[is.na(IIT_crime$`Location Description`), 'Location Description'] <- "OTHER"
+
+
+head(sort(table(IIT_crime$ID),decreasing = T))
+# ID is unique
+case_num_IIT <- sort(table(IIT_crime$`Case Number`),decreasing = T)
+rep_case_num_IIT <- which(case_num_IIT[]>1)
+rep_case_num_IIT <- names(rep_case_num_IIT)
+
+# Case Number are duplicated for 6 unique items (total 13 entries).
+IIT_crime[IIT_crime$`Case Number` %in% rep_case_num_IIT,]
+
+#removing the duplicates
+IIT_crime <- IIT_crime[!duplicated(IIT_crime$`Case Number`),]
+
+
+#Dropping attributes unimportant for analysis
+IIT_crime <- IIT_crime[, !(colnames(IIT_crime) %in% c("Beat","District","Ward","Community Area","FBI Code","Updated On", "IUCR"))]
+
+
+```
+
+```{r}
+library(lubridate)
+
+# Convert date to YYYY-MM-DD HH:MM format
+
+IIT_crime$Date <- format(as.POSIXct(IIT_crime$Date), format = "%Y-%m-%d %H:%M")
+
+
+```
+
+```{r}
+
+library(reshape2)
+library(dplyr)
+# identifying types of offences and subtypes and count of each
+offences <- sort(table(IIT_crime$`Primary Type`),decreasing = T)
+
+subtype <- sort(table(IIT_crime$Description),decreasing = T)
+
+#IIT_crime[,c('Primary Type','Description')] <- lapply(IIT_crime[c('Primary Type','Description')], factor)
+
+
+crime_type_count_IIT <- melt(table(IIT_crime[,c('Primary Type','Description')]))
+colnames(crime_type_count_IIT)[ncol(crime_type_count_IIT)] <- "count"
+
+crime_type_count_IIT[with(crime_type_count_IIT,order(-count)),]
+
+crime_type_count_IIT <- crime_type_count_IIT[crime_type_count_IIT$count>0,]
+crime_type_count_IIT <- crime_type_count_IIT[with(crime_type_count_IIT,order(`Primary Type`)),]
+
+
+##INCOMPLETE##
+##INCOMPLETE##
+##INCOMPLETE##
+##INCOMPLETE##
+##INCOMPLETE##
+##INCOMPLETE##
+
+
+```
+```{r}
+
+
+dim(UC_crime)
+# Identifying NA values 
+sum(is.na(UC_crime))
+colnames(UC_crime)[colSums(is.na(UC_crime))>0]
+UC_crime[is.na(UC_crime$`Location Description`),]
+# Identifying types of Location Description
+unique(UC_crime$`Location Description`)
+# Imputing missing data as "OTHER"
+UC_crime[is.na(UC_crime$`Location Description`),'Location Description'] <- "OTHER"
+
+
+```
+```{r}
+#ID is unqiue
+head(sort(table(UC_crime$ID),decreasing = T))
+#
+case_num_UC <- sort(table(UC_crime$`Case Number`),decreasing = T)
+rep_case_num_UC <- which(case_num_UC[]>1)
+rep_case_num_UC <- names(rep_case_num_UC)
+
+# Case Number are duplicated for 11 unique items (total 24 entries).
+UC_crime[UC_crime$`Case Number` %in% rep_case_num_UC,]
+
+#Removing duplicates
+UC_crime <- UC_crime[!duplicated(UC_crime$`Case Number`),]
+
+
+#Dropping attributes unimportant for analysis
+UC_crime <- UC_crime[, !(colnames(UC_crime) %in% c("Beat","District","Ward","Community Area","FBI Code","Updated On", "IUCR"))]
+
+```
+```{r}
+library(lubridate)
+
+# Convert date to YYYY-MM-DD HH:MM format
+
+UC_crime$Date <- format(as.POSIXct(UC_crime$Date), format = "%Y-%m-%d %H:%M")
+```
+
+```{r}
+library(reshape2)
+library(dplyr)
+# identifying types of offences and subtypes and count of each
+offences_UC <- sort(table(UC_crime$`Primary Type`),decreasing = T)
+
+subtype_UC <- sort(table(UC_crime$Description),decreasing = T)
+
+#IIT_crime[,c('Primary Type','Description')] <- lapply(IIT_crime[c('Primary Type','Description')], factor)
+
+
+crime_type_count_UC <- melt(table(UC_crime[,c('Primary Type','Description')]))
+colnames(crime_type_count_UC)[ncol(crime_type_count_UC)] <- "count"
+
+crime_type_count_UC[with(crime_type_count_UC,order(-count)),]
+
+crime_type_count_UC <- crime_type_count_UC[crime_type_count_UC$count>0,]
+crime_type_count_UC <- crime_type_count_UC[with(crime_type_count_UC,order(`Primary Type`)),]
+```
+

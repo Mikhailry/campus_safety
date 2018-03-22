@@ -1,0 +1,9 @@
+threeformats for date in UChicago
+1. MM/DD/YYYY HH:MM
+2. MM/DD/YY to MM/DD/YY HH:MM (AM/PM) to HH:MM (AM/PM)
+3. MM/DD/YY HH:MM (AM/PM) to HH:MM (AM/PM)
+
+which needs to be converted into the following format:
+
+YYYY-MM-DD HH:MM
+
