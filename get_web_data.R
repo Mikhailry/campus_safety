@@ -8,7 +8,7 @@ library(purrr)
 library(plyr)
 
 #static link for testing purposes
-#url<-read_html("https://blogs.iit.edu/public_safety/2018/01/")
+#testUrl<-c("https://blogs.iit.edu/public_safety/2015/09/")
 
 #set a timeframe for data scrapping
 startDate<-ymd(20150101)
@@ -54,6 +54,8 @@ getLinksPages <- function(link){
 }
 #get all links to parse with existing pages
 linkList <- unlist(lapply(link, getLinksPages))
+#get all links for the test link
+#testLinkList<-getLinksPages(testUrl)
 
 
 #function 'xtrText' takes xml_node as input
@@ -80,30 +82,47 @@ xtrText <- function(url){
 }
 
 #extract posts from all pages (links from linkList)
-#content2xtr<-sapply(linkList,xtrText)
 content2xtr<-map(linkList,xtrText)
+#extract posts for test linkList
+#testContent2xtr<-map(testLinkList,xtrText)
 
 #=======================================================
 #function to obtain number of incidents for the timeframe
 #to check if it matches with number of incidents obtained for analysis
-tot<-data.frame()
+totalInc<-data.frame()
 
 numIncidents<-function(content2xtr){
   
-  t<-content2xtr
-  pat<-capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4))
-  a<-str_match_all(t, pat)
-  a<-as.vector(a[[1]][,1])
-  b<-str_match_all(t, "incident type")
-  b<-as.vector(b[[1]][,1])
+  #test block
+  #t<-testContent2xtr[[2]][[11]]
+  #t<-unlist(t)
+  #str_view_all(t,dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm"))
+  #str_view_all(t,"incident type")
   
+  t<-content2xtr
+  #date match pattern
+  pat<-capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm"))
+  #matching all date values in the string
+  a<-str_match_all(t, pat)
+  #combining results in a data frame and assign it as vector
+  a<-as.vector(ldply(a)[,1])
+  #matching occurences of "incident type"
+  b<-str_match_all(t, "incident type")
+  #combining results in a data frame and assign it as vector
+  b<-as.vector(ldply(b)[,1])
+  
+  #------------------------
+  #TODO double-check cases
+  #------------------------
+  #if number of incidents and date values match, when put date and incident flag in a df
+  #elseif not match and date vector is empty put "no incident"
   if (length(a)==length(b) & !is_empty(a)) {
-    tot<-rbind(tot, cbind(date=a,type="incident"))
+    totalInc<-rbind(totalInc, cbind(date=a,type="incident"))
   } else if (length(a)!=length(b) & !is_empty(a)) {
-    tot<-rbind(tot, cbind(date=a,type="error"))
+    totalInc<-rbind(totalInc, cbind(date=a,type="no incident"))
   }
   
-  return(tot)
+  return(totalInc)
 }
 
 #unlist posts
@@ -111,12 +130,16 @@ content2xtr2<-unlist(content2xtr)
 #apply numIncidents function to extract dates of incidents and records to check
 n<-lapply(content2xtr2, numIncidents)
 #remove empty elements
-p<-n[lapply(n,length)>0]
+n<-n[lapply(n,length)>0]
 #transform list elements to df
-incidents<-ldply(p)
+incidents<-ldply(n)
 #show summary
 summary(incidents)
-
+#count number of incidents
+nIncedents <- nrow(incidents[incidents$type=="incident",])
+nIncedents
+#write df to csv
+write.csv(incidents, file = "incidents.csv", fileEncoding = "UTF-8")
 #==============================
 
 #vector to hold singular posts
@@ -124,82 +147,84 @@ posts<-vector(mode="character", 0)
 
 #function takes content2xtr vector as input
 #returns vector of singular posts
-content2posts <- function(content2xtr){
+content2posts <- function(content2xtr2){
   
-  pattern<-"incident type" %R% zero_or_more(printable()) %R%
-    repeated(SPC,3,3) %R% zero_or_more(printable()) %R%
-    repeated(SPC,3,3) %R% zero_or_more(printable()) %R%
-    repeated(SPC,3,3) %R% zero_or_more(printable())
+  #test block
+  #n[[876]]
+  #z<-content2xtr2[[876]]
+  # str_view(z,pattern=pattern)
+  # str_split(z,pattern)
   
-  post<-str_extract_all(content2xtr,pattern=pattern)
+  #splitting posts on "incident type"
+  post<-str_split(content2xtr2, lookahead("incident type"))
+  
   posts<-append(posts, post)
   return(posts)
 }
 
-#posts<-unlist(content2posts(content2xtr))
-#postsFinal<-NULL
-
 #getting the vector of singular posts
-posts<-unlist(lapply(content2xtr, content2posts))
-posts
+posts<-unlist(lapply(content2xtr2, content2posts))
 
 
 #initializing empty df to store IIT incidents
 iitCrime <- data.frame(Incident=character(), Location=character(),
-                       Occured=as.Date(character()), Disposition=character(),
+                       Occured=character(), Disposition=character(),
                        Notes=character(),stringsAsFactors = F)
 
-#================================================
-#TODO rethink the function, as some posts missing
 #================================================
 #function takes vector element as input
 #extract data, writes to data frame and returns it
 xtrData <- function(posts) {
   
-  #patterns definitions
-  onePattern<-"incident type:" %R% capture(one_or_more(PRINT)) %R% repeated(SPC,3,3) %R%  #capturing incident type
-    capture(one_or_more(PRINT)) %R% #capturing location
-    capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R%
-              SPC %R% dgt(2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm")) %R% repeated(SPC,3,3) %R% #capturing date
-    "disposition:" %R% capture(one_or_more(PRINT)) %R% repeated(SPC,3,3) %R% #capturing disposition
-    "notes:" %R% capture(one_or_more(PRINT)) #capturing notes
+   #test block
+   #posts2<-posts
+   #posts<-posts2[900]
   
-  #  str_view(postsFinal[1], onePattern)
-  #  str_match(postsFinal[1], onePattern)
+   #patterns definitions
+   incidentPattern <- "incident type:" %R% capture(one_or_more(PRINT)) #%R% repeated(SPC,3,3)
+   datePattern <- dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm")
+   disposPattern <- "disposition:" %R% capture(one_or_more(PRINT))
+   notesPattern <- "notes:" %R% capture(one_or_more(PRINT))
   
-  #  this works
-  #  locDatPattern<-capture(one_or_more(PRINT)) %R% capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R%
-  #    SPC %R% dgt(2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm"))
-  #  str_match(b,locDatPattern)
+   #matching incidents
+   Incident <- str_match(posts, incidentPattern)[,2]
+   
+   #mathcing location in 6 steps:
+   #1. splitting post on date
+   loc1 <- str_split(posts, lookahead(datePattern))
+   #2. taking first part which contains incident type and location
+   loc2 <- map(loc1,1)
+   #3. splitting part obtained in step 2 on location and incident type
+   loc3 <- str_split(loc2,lookbehind(Incident))
+   #4. taking second part (with location)
+   loc4 <- map(loc3,2)
+   #5. substitute NULL's with NA's 
+   loc4[sapply(loc4, is.null)] <- NA
+   #6. unlist
+   Location <- unlist(loc4)
+     
+   #matching date values
+   Occured <- str_match(posts, datePattern)[,1]
+   #matching disposition
+   Disposition <- str_match(posts, disposPattern)[,2]
+   #matching notes
+   Notes <- str_match(posts, notesPattern)[,2]
   
-  #  incidentPattern <- "incident type:" %R% capture(one_or_more(PRINT)) %R%
-  #    repeated(SPC,3,3)
-  #  locDatPattern<-capture(one_or_more(PRINT)) %R% capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R%
-  #                                                           SPC %R% dgt(2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm"))
-  #  datePattern <- dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R%
-  #    SPC %R% dgt(2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm")
-  #  #datePattern2 <- "\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{2}:\\d{2}[\\s]?(?:am|pm)"
-  #  disposPattern <- "disposition:" %R% capture(one_or_more(PRINT))
-  #  notesPattern <- "notes:" %R% capture(one_or_more(PRINT))
-  
-  
-  #  str_view(postsFinal[1], incidentPattern)
-  #  str_match(postsFinal[1], incidentPattern)
-  
-  #  Incident<-str_match(postsFinal, incidentPattern)
-  #  Location<-
-  #  Occured<-str_match(postsFinal, datePattern)
-  #  Disposition<-
-  #  Notes<-
-  
-  posts2xtr<-str_match(posts, onePattern)[,-1]
-  iitCrime<-rbind(iitCrime,posts2xtr)
-  colnames(iitCrime)<-c("Incident", "Location","Occured", "Disposition", "Notes")
-  #iitCrime<-rbind(Incident=posts2xtr[,1], Location=posts2xtr[,2], Occured=posts2xtr[,3], Disposition=posts2xtr[,4], Notes=posts2xtr[,5])
-  return(iitCrime)
+   #assembling data frame to return
+   iitCrime<-as.data.frame(cbind(Incident, Location, Occured, Disposition, Notes))
+   names(iitCrime)<-c("Incident", "Location", "Occured", "Disposition", "Notes")
+   
+   return(iitCrime)
 }
 
 #takes the vector of posts, extract data and puts in a df
 iitCrime<-xtrData(posts)
-iitCrime
-write.csv(iitCrime, file = "iit_campus_crimes.csv", fileEncoding = "UTF-8")
+#removing NA's
+iitCrime <- iitCrime[!is.na(iitCrime$Incident),]
+#show summary
+summary(iitCrime)
+#writing output to the csv
+write.csv(iitCrime, file = "iit_campus_crimes_v3.csv", fileEncoding = "UTF-8")
+
+#check if number of incidents matches
+stopifnot(nrow(iitCrime)==nIncedents | (nrow(iitCrime) > nIncedents*0.95 & nrow(iitCrime) < nIncedents*1.05))
