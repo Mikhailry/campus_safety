@@ -62,14 +62,14 @@ while(current_page <= total_pages) {
 }
 
 
-write.csv(uchicago_data, file = "Uchicago_campus_crimes.csv", fileEncoding = "UTF-8")
+write.csv(uchicago_data, file = "Uchicago_campus_crimes_raw.csv", fileEncoding = "UTF-8")
 
 
 # We want to read this hmtl table and convert it into a data frame
 
 
 
-uchicago_data <- read.csv("Uchicago_campus_crimes.csv")
+uchicago_data <- read.csv("Uchicago_campus_crimes_raw.csv")
 head(uchicago_data)
 nrow(uchicago_data) #5371 rows
 ncol(uchicago_data) # 8 columns
@@ -160,7 +160,7 @@ uchicago_data$Location <- factor(uchicago_data$Location)
 
 #use regular expression to pull the locationo detail from the address
 
-unlist(strsplit("the2quickbrownfoxeswere2tired)", '[(]'))[1]
+#unlist(strsplit("the2quickbrownfoxeswere2tired)", '[(]'))[1]
 data_cpy <- uchicago_data
 # Location_char <- as.character(uchicago_data$Location)
 # levels(uchicago_data$Location) <- c(levels(uchicago_data$Location), "924 E. 58th St. (Knapp Center)")
@@ -168,10 +168,11 @@ data_cpy <- uchicago_data
 # uchicago_data$Location[186] <- '924 E. 58th St. (Knapp Center)'
 library(tidyr)
 data_cpy <- separate(data_cpy, Location,c("Location Address", "Location Name"), sep = "[(]", extra = 'merge')
+
 data_cpy$`Location Name` <- gsub("\\)", "", data_cpy$`Location Name`)
 
 head(data_cpy$Reported, 100) #4567 levels
-data_cpy <- uchicago_data
+uchicago_data <- data_cpy
 no_report_values <- data_cpy$`Location Address`[grepl("^No.*", data_cpy$`Location Address`)]
 for (i in no_report_values){
 
@@ -179,21 +180,38 @@ for (i in no_report_values){
 }
 data_cpy$`Location Address` <- factor(data_cpy$`Location Address`)
 nrow(data_cpy)
-data_cpy["352", ]
+
 View(data_cpy)
 data_cpy[data_cpy$Incident == 'NA',]
-data_cpy["3542", ]
-data_cpy["59", ]
-data_cpy["2480", ]
 data_cpy <- data_cpy[!(data_cpy$Incident == 'NA'),]  
 data_cpy <- separate(data_cpy, Reported, c('Date', 'Time', 'AM/PM')
                , sep=' ' 
                , remove=TRUE)
 data_cpy$Time <- paste(data_cpy$Time, data_cpy$`AM/PM` , sep =  " ")
+# Warning messages:
+#   1: Too many values at 2 locations: 352, 3542 
+# 2: Too few values at 2 locations: 59, 2480 
+
+
 head(data_cpy)
 #some tasks to be done in reporting field
-#some more tasks to be done
-sb$Time <- format(strptime(sb$Time, "%I:%M %p"), format="%H:%M")
+
+data_cpy$Time <- format(strptime(data_cpy$Time, "%I:%M %p"), format="%H:%M")
+
+drop_col <- function(drops, df) {
+  drops <- c("AM/PM" )
+  data_cpy <- data_cpy[, !(names(data_cpy) %in% drops)]
+}
+
+uchicago_data <- data_cpy
+write.csv(uchicago_data, file = "Uchicago_campus_crimes_partlycleaned.csv", fileEncoding = "UTF-8")
+Occured_df <- data.frame(table(data_cpy$Occurred, useNA = 'always'))
+head(Incident_df)
+
+attach(Incident_df)
+ordered_Incident_df <- Incident_df[order(-Freq), ]
+
+
 drops <- c("Occured Start Date", "Occured End Date" )
 sb <- sb[, !(names(sb) %in% drops)]
 
