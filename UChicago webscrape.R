@@ -199,38 +199,74 @@ head(data_cpy)
 data_cpy$Time <- format(strptime(data_cpy$Time, "%I:%M %p"), format="%H:%M")
 
 drop_col <- function(drops, df) {
-  drops <- c("AM/PM" )
-  data_cpy <- data_cpy[, !(names(data_cpy) %in% drops)]
+
+  return(df[, !(names(df) %in% drops)])
 }
 
-uchicago_data <- data_cpy
+
+
 write.csv(uchicago_data, file = "Uchicago_campus_crimes_partlycleaned.csv", fileEncoding = "UTF-8")
+uchicago_data <- read.csv("Uchicago_campus_crimes_partlycleaned.csv")
+head(uchicago_data)
+data_cpy <- uchicago_data
 Occured_df <- data.frame(table(data_cpy$Occurred, useNA = 'always'))
-head(Incident_df)
+head(Occured_df)
+attach(Occured_df)
+ordered_Occured_df <- Occured_df[order(-Freq), ]
+head(ordered_Occured_df)
 
-attach(Incident_df)
-ordered_Incident_df <- Incident_df[order(-Freq), ]
 
 
-drops <- c("Occured Start Date", "Occured End Date" )
-sb <- sb[, !(names(sb) %in% drops)]
+data_cpy[which(data_cpy$Occurred == "Unknown date and time"),]
 
-# summary(sb$Time)
-# sb$Occurred
-# pattern <- "\\d+/\\d+/\\d+"
-# 
-# sb$DatesOcc <- mapply(str_extract_all, sb$Occurred, pattern)
-# sb$DatesOcc <- mapply(as.character, sb$DatesOcc)
-# 
-# #sb$DatesOcc <- as.vector(mapply(str_extract_all, sb$Occurred, pattern))
-# 
-# sb <- separate(sb, DatesOcc, c('Occured Start Date', 'Occured End Date')
-#                , sep=',' 
-#                , remove=TRUE)
-# 
-# 
-# head(sb)
-# sb$DatesOcc <- as.character(sb$DatesOcc)
-# length(sb$DatesOcc[1])
-# class(sb$DatesOcc)
-# testval <- strsplit(sb$DatesOcc[1], split =  ',')
+
+head(data_cpy)
+
+date.pat <- '\\d{1,2}/\\d{1,2}/\\d{2,4}'
+time.pat <- '\\d{1,2}:\\d{1,2} ([AaPp][Mm])'
+x <- "12/31/13 to 10:00 PM to 1:30 AM"
+regmatches(x, gregexpr(time.pat, x))
+
+Occured_char <- as.character(data_cpy$Occurred)
+Occured_char <- regmatches(Occured_char, gregexpr(date.pat, Occured_char))
+length(Occured_char)
+Occured_char <- lapply(Occured_char, unlist)
+length(Occured_char)
+data_cpy$'Occured Start Date' <- sapply(Occured_char, function(x) return (x[1]))
+data_cpy$'Occured End Date' <- sapply(Occured_char, function(x) return (x[2]))
+head(data_cpy)
+
+Occured_char <- as.character(data_cpy$Occurred)
+Occured_char <- regmatches(Occured_char, gregexpr(time.pat, Occured_char))
+length(Occured_char)
+Occured_char <- lapply(Occured_char, unlist)
+length(Occured_char)
+data_cpy$'Occured Start Time' <- sapply(Occured_char, function(x) return (x[1]))
+data_cpy$'Occured End Time' <- sapply(Occured_char, function(x) return (x[2]))
+
+head(data_cpy)
+uchicago_data <- data_cpy
+data_cpy[which(data_cpy$Occurred == "Unknown date and time"),]
+
+data_cpy$`Occured Start Date`[which(data_cpy$Occurred == "Unknown date and time")] <- "Unknown Start Date"
+data_cpy$`Occured End Date`[which(data_cpy$Occurred == "Unknown date and time")] <- "Unknown End Date"
+data_cpy$`Occured Start Time`[which(data_cpy$Occurred == "Unknown date and time")] <- "Unknown Start Time"
+data_cpy$`Occured End Time`[which(data_cpy$Occurred == "Unknown date and time")] <- "Unknown End Time"
+
+
+data_cpy <- drop_col(c('Occurred'), data_cpy)
+uchicago_data <- data_cpy
+head(data_cpy)
+View(uchicago_data)
+data_cpy$`Occured Start Time` <- format(strptime(data_cpy$`Occured Start Time`, "%I:%M %p"), format="%H:%M")
+data_cpy$`Occured End Time` <- format(strptime(data_cpy$`Occured End Time`, "%I:%M %p"), format="%H:%M")
+
+View(uchicago_data)
+data_cpy <- uchicago_data
+data_cpy <- drop_col(c("X"), data_cpy)
+View(data_cpy)
+uchicago_data <- data_cpy
+write.csv(uchicago_data, file = "Uchicago_campus_crimes_cleaned.csv", fileEncoding = "UTF-8")
+
+
+
