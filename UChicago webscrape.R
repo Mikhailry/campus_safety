@@ -191,6 +191,7 @@ data_cpy <- separate(data_cpy, Reported, c('Date', 'Time', 'AM/PM')
                , remove=TRUE)
 data_cpy$Time <- paste(data_cpy$Time, data_cpy$`AM/PM` , sep =  " ")
 head(data_cpy)
+#some tasks to be done in reporting field
 sb$Time <- format(strptime(sb$Time, "%I:%M %p"), format="%H:%M")
 drops <- c("Occured Start Date", "Occured End Date" )
 sb <- sb[, !(names(sb) %in% drops)]
