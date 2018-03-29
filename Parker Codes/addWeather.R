@@ -1,10 +1,13 @@
 library(readxl)
+library(readr)
 
 #Change path, load data
 Crime_2014toPres_IIT_area <- read_excel("~/Documents/Math 571 project/Mathew_pub_saf/Crime_2014toPres_IIT area.xlsx")
 Crime_2014toPres_UC_area <- read_excel("~/Documents/Math 571 project/Mathew_pub_saf/Crime_2014toPres_UC area.xlsx")
 #load("~/Documents/Math 571 project/Data/weatherFull.Rda")
 load("~/Documents/Math 571 project/Data/iitCrime.Rda")
+Uchicago_campus_crimes_cleaned <- read_csv("~/Documents/Math 571 project/Uchicago_campus_crimes_cleaned.csv")
+
 
 #*******************Crime around the Schools**************************
 
@@ -56,6 +59,20 @@ for (i in 1:length(iitCrime$Occured)){
   iitCrime[i,"temperature"]<-weatherFull$temp[row][1]
 }
 
-
-
-
+#UChicago
+#Get posix time
+Uchicago_campus_crimes_cleaned$temp<-paste(Uchicago_campus_crimes_cleaned$Date, as.character(Uchicago_campus_crimes_cleaned$Time), sep=' ')
+Uchicago_campus_crimes_cleaned$posixTime<-as.POSIXct(Uchicago_campus_crimes_cleaned$temp, '%m/%d/%y %H:%M:%S', tz= 'America/Chicago')
+Uchicago_campus_crimes_cleaned$temp<-NULL
+#Add new columns
+Uchicago_campus_crimes_cleaned[,'weather_cond']<-NA
+Uchicago_campus_crimes_cleaned[,'weather_sev']<-NA
+Uchicago_campus_crimes_cleaned[,'temperature']<-NA
+#Enter weather
+for (i in 1:length(Uchicago_campus_crimes_cleaned$posixTime)){
+  min_diff<-min(abs(Uchicago_campus_crimes_cleaned$posixTime[i]-weatherFull$date))
+  row<-as.numeric(row.names(weatherFull[abs(Uchicago_campus_crimes_cleaned$posixTime[i]-weatherFull$date)==min_diff,]))
+  Uchicago_campus_crimes_cleaned[i,"weather_cond"]<-weatherFull$condition[row][1]
+  Uchicago_campus_crimes_cleaned[i,"weather_sev"]<-weatherFull$severity[row][1]
+  Uchicago_campus_crimes_cleaned[i,"temperature"]<-weatherFull$temp[row][1]
+}
