@@ -76,3 +76,9 @@ for (i in 1:length(Uchicago_campus_crimes_cleaned$posixTime)){
   Uchicago_campus_crimes_cleaned[i,"weather_sev"]<-weatherFull$severity[row][1]
   Uchicago_campus_crimes_cleaned[i,"temperature"]<-weatherFull$temp[row][1]
 }
+
+#save
+save(Crime_2014toPres_IIT_area,file = 'iitAreaWithWeather.Rda')
+save(Crime_2014toPres_UC_area,file = 'ucAreaWithWeather.Rda')
+save(iitCrime,file = 'iitCrimeWithWeather.Rda')
+save(Uchicago_campus_crimes_cleaned,file = 'ucCrimeWithWeather.Rda')
