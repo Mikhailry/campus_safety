@@ -151,3 +151,4 @@ for (i in 1:length(weatherFull$date)){
     weatherFull$severity[i]<-('Medium')
   }
 }
+save(weatherFull,file = 'cleanWeatherFull.Rda')
