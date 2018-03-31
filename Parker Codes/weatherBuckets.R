@@ -113,6 +113,11 @@ plot(as.factor(iitCrime$weather_cond), xlab='Weather Condition', ylab='# of Crim
 plot(as.factor(Uchicago_campus_crimes_cleaned$weather_cond), xlab='Weather Condition', ylab='# of Crimes', main = 'UC Public Safety')
 plot(as.factor(Crime_2014toPres_IIT_area$weather_cond), xlab='Weather Condition', ylab='# of Crimes', main = 'IIT Area')
 plot(as.factor(Crime_2014toPres_UC_area$weather_cond), xlab='Weather Condition', ylab='# of Crimes', main = 'UC Area')
+#weather severity
+plot(factor(iitCrime$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'IIT Public Safety')
+plot(factor(Uchicago_campus_crimes_cleaned$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'UC Public Safety')
+plot(factor(Crime_2014toPres_IIT_area$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'IIT Area')
+plot(factor(Crime_2014toPres_UC_area$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'UC Area')
 #histograms for temperature
 hist(iitCrime$temperature, xlab = 'Temperature in Degress F', ylab = '# of Crimes', main = 'IIT Public Safety')
 hist(Uchicago_campus_crimes_cleaned$temperature, xlab = 'Temperature in Degress F', ylab = '# of Crimes', main = 'UC Public Safety')
@@ -127,11 +132,6 @@ hist(Crime_2014toPres_IIT_area$Month, xlab = 'Month', ylab = '# of Crimes', main
 axis(1, at=seq(1,12,1), labels=c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'))
 hist(Crime_2014toPres_UC_area$Month, xlab = 'Month', ylab = '# of Crimes', main = 'UC Area', xaxt='n')
 axis(1, at=seq(1,12,1), labels=c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'))
-#weather severity
-plot(factor(iitCrime$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'IIT Public Safety')
-plot(factor(Uchicago_campus_crimes_cleaned$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'UC Public Safety')
-plot(factor(Crime_2014toPres_IIT_area$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'IIT Area')
-plot(factor(Crime_2014toPres_UC_area$weather_sev, levels = c('Low', 'Medium', 'High')), xlab='Weather Severity', ylab='# of Crimes', main = 'UC Area')
 
 
 
