@@ -1,10 +1,11 @@
 library(readxl)
 library(readr)
+library(lubridate)
 
 #Change path, load data
 Crime_2014toPres_IIT_area <- read_excel("~/Documents/Math 571 project/Mathew_pub_saf/Crime_2014toPres_IIT area.xlsx")
 Crime_2014toPres_UC_area <- read_excel("~/Documents/Math 571 project/Mathew_pub_saf/Crime_2014toPres_UC area.xlsx")
-#load("~/Documents/Math 571 project/Data/weatherFull.Rda")
+load("~/Documents/Math 571 project/Data/cleanweatherFull.Rda")
 load("~/Documents/Math 571 project/Data/iitCrime.Rda")
 Uchicago_campus_crimes_cleaned <- read_csv("~/Documents/Math 571 project/Uchicago_campus_crimes_cleaned.csv")
 
@@ -14,6 +15,8 @@ Uchicago_campus_crimes_cleaned <- read_csv("~/Documents/Math 571 project/Uchicag
 #Convert date/time into CDT time for area crime
 attr(Crime_2014toPres_IIT_area$Date,"tzone")<-"America/Chicago"
 attr(Crime_2014toPres_UC_area$Date,"tzone")<-"America/Chicago"
+Crime_2014toPres_IIT_area$Date<-Crime_2014toPres_IIT_area+hours(5)
+Crime_2014toPres_UC_area$Date<-Crime_2014toPres_UC_area+hours(5)
 
 #Add new columns for weather condition
 Crime_2014toPres_IIT_area[,'weather_cond']<-NA
