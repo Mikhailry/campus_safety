@@ -1,0 +1,15 @@
+library(corrplot)
+library(caret)
+#load in data
+#CHANGE PATH
+load("~/Documents/Math 571 project/Data/iitCrimeWithWeather.Rda")
+load("~/Documents/Math 571 project/Data/ucCrimeWithWeather.Rda")
+load("~/Documents/Math 571 project/Data/iitAreaWithWeather.Rda")
+load("~/Documents/Math 571 project/Data/ucAreaWithWeather.Rda")
+
+sort(table(as.factor(iitCrime$weather_cond_exact)), decreasing = TRUE)
+sort(table(as.factor(Uchicago_campus_crimes_cleaned$weather_cond_exact)), decreasing = TRUE)
+plot(sort(table(as.factor(iitCrime$weather_cond_exact)), decreasing = TRUE)[1:8])
+plot(sort(table(as.factor(Uchicago_campus_crimes_cleaned$weather_cond_exact)), decreasing = TRUE)[1:8])
+
+#contingency table
