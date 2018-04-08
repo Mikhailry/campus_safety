@@ -133,6 +133,8 @@ axis(1, at=seq(1,12,1), labels=c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'
 hist(Crime_2014toPres_UC_area$Month, xlab = 'Month', ylab = '# of Crimes', main = 'UC Area', xaxt='n')
 axis(1, at=seq(1,12,1), labels=c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'))
 
-
+#TODO
+#histogram of weekday and weekends
+#histogram of day of the week
 
 
