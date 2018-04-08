@@ -7,7 +7,7 @@ library(stringr) #manipulating strings
 library(purrr)  #to work with functions and vectors
 library(plyr) #manipulating data structures
 library(xlsx) #read/write Excel files
-library(rJava) #required to write to xlsx file
+#library(rJava) #required to write to xlsx file
 
 #static link for testing purposes
 #testUrl<-c("https://blogs.iit.edu/public_safety/2015/09/")
@@ -134,15 +134,12 @@ numIncidents<-function(content2xtr){
   #combining results in a data frame and assign it as vector
   b<-as.vector(ldply(b)[,1])
   
-  #------------------------
-  #TODO double-check cases
-  #------------------------
-  #if number of incidents and date values match, when put date and incident flag in a df
+  #if number of incidents and date values match, when put date and OK flag in a df
   #elseif not match and date vector is empty put "no incident"
   if (length(a)==length(b) & !is_empty(a)) {
-    totalInc<-rbind(totalInc, cbind(date=a,type="incident"))
-  } else if (length(a)!=length(b) & !is_empty(a)) {
-    totalInc<-rbind(totalInc, cbind(date=a,type="no incident"))
+    totalInc<-rbind(totalInc, cbind(date=a,type="ok"))
+  } else if (length(a)!=length(b) & !is_empty(b)) {
+    totalInc<-rbind(totalInc, cbind(date=a,type="check"))
   }
   
   return(totalInc)
@@ -158,13 +155,19 @@ n<-n[lapply(n,length)>0]
 incidents<-ldply(n)
 #show summary
 summary(incidents)
+
+#incidents with matching date - 1580
+#incidents requiring manual check - 22
+#ok   :1580  
+#check:  22
+
 #count number of incidents
-nIncedents <- nrow(incidents[incidents$type=="incident",])
+nIncedents <- nrow(incidents)
 nIncedents
 #write df to csv
 write.csv(incidents, file = "incidents.csv", fileEncoding = "UTF-8")
 
-#output - number of incidents (nIncedents) = 1580
+#output - number of incidents (nIncedents) = 1602
 #and output file to check at which dates number of incidents in the post doesn't match number of dates
 
 #----------------------------------------------------------------
@@ -268,10 +271,8 @@ iitCrime<-xtrData(posts)
 iitCrime <- iitCrime[!is.na(iitCrime$Incident),]
 #show summary
 summary(iitCrime)
-#write.csv(iitCrime, file = "iit_campus_crimes_notCleaned_v0402.csv")
 
 #output  - df iitCrime
-
 #----------------------------------------------------------------
 
 #let's do some final cleaning on iitCrime df
@@ -300,31 +301,31 @@ iitCleaned2[ind, ]
 #find empty dates indices
 emptyDatesInd <- which(is.na(iitCleaned2$Occured))
 iitCleaned2[emptyDatesInd,]
-#replace empty dates with "1/1/1970 00:01 am"
-iitCleaned2$Occured[is.na(iitCleaned2$Occured)] <- "1/1/1970 00:01 am"
 
 #find dates without time stamp
-datesNoTimeInd <- which(is.na(as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %H:%M %p")))
-iitCleaned2[datesNoTimeInd,]
-#add time stamp
-iitCleaned2$Occured[datesNoTimeInd] <- paste(iitCleaned2$Occured[datesNoTimeInd], "00:01 am")
+datesNoTimeInd <- which(is.na(as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %I:%M %p")))
+datesNoTime <- iitCleaned2$Occured[datesNoTimeInd]
 
 #convert data type of 'occured' variable
-iitCleaned2$Occured <- as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %H:%M %p")
+iitCleaned2$Occured <- as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %I:%M %p")
 
-#exclude NA's locations
-iitCleaned3 <- iitCleaned2[!is.na(iitCleaned2$Location),]
+#add time stamp
+iitCleaned2$Occured[datesNoTimeInd] <- as.POSIXct(paste(datesNoTime, "00:00 am"), format="%m/%d/%Y %H:%M %p")
 
-#output - df iitCleaned3
-
-#----------------------------------------------------------------
-
-#writing output to the csv
-write.csv(iitCleaned3, file = "iit_campus_crimes_v0402.csv")
-#write.xlsx(iitCleaned3, file = "iit_campus_crimes_v0402.xlsx")
-
-#save iitCrimeClined as .rda
-save(iitCleaned3, file = "iitCrime_0403.rda")
+#replace empty dates with "1/1/1970 00:00 am"
+iitCleaned2$Occured[emptyDatesInd] <- as.POSIXct("1/1/1970 00:00 am", format="%m/%d/%Y %H:%M %p")
 
 #check if number of incidents matches
-stopifnot(nrow(iitCrime)==nIncedents | (nrow(iitCleaned2) > nIncedents*0.95 & nrow(iitCrime) < nIncedents*1.05))
+stopifnot(nrow(iitCleaned2)==nIncedents | (nrow(iitCleaned2) > nIncedents*0.95 & nrow(iitCleaned2) < nIncedents*1.05))
+
+#output - df iitCleaned2
+#----------------------------------------------------------------
+
+#save iitCleaned2 as iitCrime
+iitCrime <- iitCleaned2
+
+#writing output to the csv
+write.csv(iitCrime, file = "iit_campus_crimes.csv")
+
+#save iitCrimeCleaned as .rda
+save(iitCrime, file = "iitCrime.rda")
