@@ -46,13 +46,13 @@ for (i in 1:length(Crime_2014toPres_UC_area$Date)){
   Crime_2014toPres_UC_area[i,"weather_cond"]<-weatherFull$condition[row][1]
   Crime_2014toPres_UC_area[i,"weather_sev"]<-weatherFull$severity[row][1]
   Crime_2014toPres_UC_area[i,"temperature"]<-weatherFull$temp[row][1]
-  Crime_2014toPres_UC_area[i,"weather_exact"]<-weatherFull$cond[row][1]
+  Crime_2014toPres_UC_area[i,"weather_cond_exact"]<-weatherFull$cond[row][1]
 }
 
 #*******************Public Safety Blogs**************************
 #IIT
 #Change into Posix time
-iitCrime$Occured<-as.POSIXct(as.character(iitCrime$Occured),"%m/%d/%Y %I:%M %p", tz='America/Chicago')
+#iitCrime$Occured<-as.POSIXct(as.character(iitCrime$Occured),"%m/%d/%Y %I:%M %p", tz='America/Chicago')
 #Add new columns
 iitCrime[,'weather_cond']<-NA
 iitCrime[,'weather_sev']<-NA
