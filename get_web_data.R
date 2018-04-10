@@ -1,11 +1,13 @@
 #loading library for web scrapping
-library(rvest)
-library(lubridate)
-library(httr)
-library(rebus)
-library(stringr)
-library(purrr)
-library(plyr)
+library(rvest) #webscraping: extract pieces from html
+library(lubridate) #manipulating dates
+library(httr) #to check if page exists
+library(rebus) #regular expression builder
+library(stringr) #manipulating strings
+library(purrr)  #to work with functions and vectors
+library(plyr) #manipulating data structures
+library(xlsx) #read/write Excel files
+#library(rJava) #required to write to xlsx file
 
 #static link for testing purposes
 #testUrl<-c("https://blogs.iit.edu/public_safety/2015/09/")
@@ -14,6 +16,7 @@ library(plyr)
 startDate<-ymd(20150101)
 endDate<-ymd(20180101)
 
+#----------------------------------------------------------------
 #function to generate a vector of all links for the timeframe
 #takes 'startDate' and 'endDate' as input and returns a vector 'links' of links
 getLinks<-function(startdate,endDate){
@@ -30,6 +33,12 @@ getLinks<-function(startdate,endDate){
 #function to obtain links for the timeframe set
 link<-getLinks(startDate, endDate)
 
+#output sample - vector of links with only 1st page of posts:
+#[1] "https://blogs.iit.edu/public_safety/2015/01/" "https://blogs.iit.edu/public_safety/2015/02/"
+#[3] "https://blogs.iit.edu/public_safety/2015/03/" "https://blogs.iit.edu/public_safety/2015/04/"
+#[5] "https://blogs.iit.edu/public_safety/2015/05/" "https://blogs.iit.edu/public_safety/2015/06/"
+
+#----------------------------------------------------------------
 
 #instantiating empty vector to store links to process
 linkList<-vector(mode="character", 0)
@@ -57,6 +66,12 @@ linkList <- unlist(lapply(link, getLinksPages))
 #get all links for the test link
 #testLinkList<-getLinksPages(testUrl)
 
+#output sample - vector of links with all pages of posts:
+#[1] "https://blogs.iit.edu/public_safety/2015/01/"        "https://blogs.iit.edu/public_safety/2015/01/page/2/"
+#[3] "https://blogs.iit.edu/public_safety/2015/01/page/3/" "https://blogs.iit.edu/public_safety/2015/02/"       
+#[5] "https://blogs.iit.edu/public_safety/2015/02/page/2/" "https://blogs.iit.edu/public_safety/2015/03/"       
+
+#----------------------------------------------------------------
 
 #function 'xtrText' takes xml_node as input
 #and returns content of type vector
@@ -67,9 +82,9 @@ xtrText <- function(url){
     html_text()
   
   #removing escape characters
-  #q1<-gsub("\n", "", content)
-  #q2<-gsub("\t", "" , content)
-  #content<-gsub("\r", "", q2)
+  #q1<-str_replace_all(content, "\n", "")
+  #q2<-str_replace_all(q1, "\t", "")
+  #content<-str_replace_all(q2, "\r", "")
   
   #substituting rss* values with ""
   content<-gsub("RSS.*$","",content)
@@ -86,7 +101,14 @@ content2xtr<-map(linkList,xtrText)
 #extract posts for test linkList
 #testContent2xtr<-map(testLinkList,xtrText)
 
-#=======================================================
+#output sample - a list of all posts for the timeframe, one element (string) can have miltiple posts:
+#[[86]]
+#[1] "\n\t\t\t\t\t"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+#[2] "\r\n\t\t\tthere is no information to report for the iitpsd public crime log for 1-8-2018.\n\t\t\t\r\n\t\t"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+#[3] "\r\n\t\t\tgood morning and welcome back illinois tech!\nbelow is the public crime log for friday, january 5 thought sunday january 7 2018\nincident type:harassment : phone\nillinois institute of technology : kent campus – 565 w adams 1/5/2018 10:33 am\ndisposition: information only\nnotes: iitpsd responded to a phone harassment call.\n\nincident type:alarm : fire\nillinois institute of technology : vandercook 2 – 3125 s federal 1/5/2018 05:00 pm\ndisposition: facilities notified\nnotes: iitpsd responded to a call of an actived fire alarm at vandercook #2.\nincident type:assault-aggravated\nillinois institute of technology : vandercook 2 – 3125 s federal 1/6/2018 11:40 pm\ndisposition: cleared by arrest\nnotes: iitpsd responded to 31st and federal for a wellbeing check of a member of general public.\nincident type:utility incident : water\nillinois institute of technology : \mies campus : academic/administrative buildings : siegel hall – 3301 s dearborn 1/7/2018 04:36 pm\ndisposition: housekeeping notified\nnotes: iitpsd responded to siegel hall for a utility incident involving water.\nthank you\n\n\t\t\t\r\n\t\t"          
+
+#----------------------------------------------------------------
+
 #function to obtain number of incidents for the timeframe
 #to check if it matches with number of incidents obtained for analysis
 totalInc<-data.frame()
@@ -94,14 +116,15 @@ totalInc<-data.frame()
 numIncidents<-function(content2xtr){
   
   #test block
-  #t<-testContent2xtr[[2]][[11]]
-  #t<-unlist(t)
-  #str_view_all(t,dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm"))
-  #str_view_all(t,"incident type")
+  # t<-content2xtr[[65]][[3]]
+  # t<-unlist(t)
+  # str_view_all(t,dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% zero_or_more(SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% optional(or ("am", "pm"))))
+  # str_view_all(t,"incident type")
   
   t<-content2xtr
   #date match pattern
   pat<-capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm"))
+  #pat<-capture(dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% zero_or_more(SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% optional(or ("am", "pm"))))
   #matching all date values in the string
   a<-str_match_all(t, pat)
   #combining results in a data frame and assign it as vector
@@ -111,15 +134,12 @@ numIncidents<-function(content2xtr){
   #combining results in a data frame and assign it as vector
   b<-as.vector(ldply(b)[,1])
   
-  #------------------------
-  #TODO double-check cases
-  #------------------------
-  #if number of incidents and date values match, when put date and incident flag in a df
+  #if number of incidents and date values match, when put date and OK flag in a df
   #elseif not match and date vector is empty put "no incident"
   if (length(a)==length(b) & !is_empty(a)) {
-    totalInc<-rbind(totalInc, cbind(date=a,type="incident"))
-  } else if (length(a)!=length(b) & !is_empty(a)) {
-    totalInc<-rbind(totalInc, cbind(date=a,type="no incident"))
+    totalInc<-rbind(totalInc, cbind(date=a,type="ok"))
+  } else if (length(a)!=length(b) & !is_empty(b)) {
+    totalInc<-rbind(totalInc, cbind(date=a,type="check"))
   }
   
   return(totalInc)
@@ -135,12 +155,22 @@ n<-n[lapply(n,length)>0]
 incidents<-ldply(n)
 #show summary
 summary(incidents)
+
+#incidents with matching date - 1580
+#incidents requiring manual check - 22
+#ok   :1580  
+#check:  22
+
 #count number of incidents
-nIncedents <- nrow(incidents[incidents$type=="incident",])
+nIncedents <- nrow(incidents)
 nIncedents
 #write df to csv
 write.csv(incidents, file = "incidents.csv", fileEncoding = "UTF-8")
-#==============================
+
+#output - number of incidents (nIncedents) = 1602
+#and output file to check at which dates number of incidents in the post doesn't match number of dates
+
+#----------------------------------------------------------------
 
 #vector to hold singular posts
 posts<-vector(mode="character", 0)
@@ -165,51 +195,69 @@ content2posts <- function(content2xtr2){
 #getting the vector of singular posts
 posts<-unlist(lapply(content2xtr2, content2posts))
 
+#save posts as .rda
+save(posts, file = "posts.rda")
+#load(posts)
+
+#output - a vector of all posts for the timeframe (each post in a single string):
+#[996] "incident type: trespassing : bar notice\nillinois institute of technology : mies campus : stuart building – 2/5/2016 04:43 am\ndisposition: police notified\nnotes: iitpsd responded to stuart building for a trespassing report. iitpsd detained the individual and was issued a bar notice.\n \n"                                                                                                  
+#[997] "incident type:assist other agency/department\nillinois institute of technology : mies campus : street locations : state-2/5/2016 08:30 pm\ndisposition: police notified\nnotes: iitpsd responded to 31st and state street for a report of shots fired in the area involving members of the general public.\n \nthank you,\n \n\t\t\t\r\n\t\t"                                                        
+#[998] "\r\n\t\t\thello,\n \nthere is no information to report for the  iitpsd public crime log for 2/4/2016.\n \nthank you,\n \n\t\t\t\r\n\t\t"            
+
+#----------------------------------------------------------------
 
 #initializing empty df to store IIT incidents
 iitCrime <- data.frame(Incident=character(), Location=character(),
                        Occured=character(), Disposition=character(),
                        Notes=character(),stringsAsFactors = F)
 
-#================================================
 #function takes vector element as input
 #extract data, writes to data frame and returns it
 xtrData <- function(posts) {
   
-   #test block
-   #posts2<-posts
-   #posts<-posts2[900]
-  
    #patterns definitions
-   incidentPattern <- "incident type:" %R% capture(one_or_more(PRINT)) #%R% repeated(SPC,3,3)
-   datePattern <- dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% or ("am", "pm")
+   incidentPattern <- "incident type:" %R% capture(one_or_more(PRINT)) %R% "illinois institute of technology"
+   datePattern <- dgt(1,2) %R% "/" %R% dgt(1,2) %R% "/" %R% dgt(4) %R% zero_or_more(SPC %R% dgt(1,2) %R% ":" %R%  dgt(2) %R% optional(SPC) %R% optional(or ("am", "pm"))) 
+   
    disposPattern <- "disposition:" %R% capture(one_or_more(PRINT))
    notesPattern <- "notes:" %R% capture(one_or_more(PRINT))
   
+   #test block
+   # posts2<-posts
+   # posts<-posts2[1649]
+   # posts
+   # posts<-str_replace_all(posts, "\n", " ")
+   # posts
+   # str_view(posts, incidentPattern)#Incident <-
+   # str_match(posts, incidentPattern)[,2]
+   # 
+   # str_view(posts, datePattern)#Occured <-
+   # Occured <- str_match(posts, datePattern)[,1]
+   # 
+   # str_view(posts, locationPattern)#Location <-
+   # str_match(posts, locationPattern)[,2]
+   # 
+   # str_view(posts, disposPattern)#Disposition <-
+   # str_view(posts, notesPattern)#Notes <-
+   
+   #replace all \n symbols
+   posts<-str_replace_all(posts, "\n", " ")
+   
    #matching incidents
    Incident <- str_match(posts, incidentPattern)[,2]
    
-   #mathcing location in 6 steps:
-   #1. splitting post on date
-   loc1 <- str_split(posts, lookahead(datePattern))
-   #2. taking first part which contains incident type and location
-   loc2 <- map(loc1,1)
-   #3. splitting part obtained in step 2 on location and incident type
-   loc3 <- str_split(loc2,lookbehind(Incident))
-   #4. taking second part (with location)
-   loc4 <- map(loc3,2)
-   #5. substitute NULL's with NA's 
-   loc4[sapply(loc4, is.null)] <- NA
-   #6. unlist
-   Location <- unlist(loc4)
-     
    #matching date values
    Occured <- str_match(posts, datePattern)[,1]
+   
    #matching disposition
    Disposition <- str_match(posts, disposPattern)[,2]
    #matching notes
    Notes <- str_match(posts, notesPattern)[,2]
-  
+   
+   #matching location
+   locationPattern <- capture("illinois institute of technology" %R% one_or_more(PRINT)) %R% Occured
+   Location <- str_match(posts, locationPattern)[,2]
+   
    #assembling data frame to return
    iitCrime<-as.data.frame(cbind(Incident, Location, Occured, Disposition, Notes))
    names(iitCrime)<-c("Incident", "Location", "Occured", "Disposition", "Notes")
@@ -223,8 +271,61 @@ iitCrime<-xtrData(posts)
 iitCrime <- iitCrime[!is.na(iitCrime$Incident),]
 #show summary
 summary(iitCrime)
-#writing output to the csv
-write.csv(iitCrime, file = "iit_campus_crimes_v3.csv", fileEncoding = "UTF-8")
+
+#output  - df iitCrime
+#----------------------------------------------------------------
+
+#let's do some final cleaning on iitCrime df
+
+#remove whitespaces at start and end of values of df
+iitCleaned <- data.frame(lapply(iitCrime, trimws), stringsAsFactors = F)
+
+#remove escape characters, characters from the set [-,–,:] at the end of string
+removeEscapeChar <- function(x) {
+  x <- str_trim(x, side="both")
+  x <- str_replace_all(x, "\n", "")
+  x <- str_replace_all(x, "\r", "")
+  x <- str_replace_all(x, "\t", "")
+  x <- str_replace_all(x, "[-,–,:]$", "")
+}
+
+iitCleaned2<-data.frame(lapply(iitCleaned,removeEscapeChar), stringsAsFactors = F)
+
+#number or observations where location is missing
+sum(is.na(iitCleaned2$Location)) #4
+#finding indices and view the rows with missing Location values
+ind <- which(is.na(iitCleaned2$Location))
+# Look at the full rows for missing Location
+iitCleaned2[ind, ]
+
+#find empty dates indices
+emptyDatesInd <- which(is.na(iitCleaned2$Occured))
+iitCleaned2[emptyDatesInd,]
+
+#find dates without time stamp
+datesNoTimeInd <- which(is.na(as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %I:%M %p")))
+datesNoTime <- iitCleaned2$Occured[datesNoTimeInd]
+
+#convert data type of 'occured' variable
+iitCleaned2$Occured <- as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %I:%M %p")
+
+#add time stamp
+iitCleaned2$Occured[datesNoTimeInd] <- as.POSIXct(paste(datesNoTime, "00:00 am"), format="%m/%d/%Y %H:%M %p")
+
+#replace empty dates with "1/1/1970 00:00 am"
+iitCleaned2$Occured[emptyDatesInd] <- as.POSIXct("1/1/1970 00:00 am", format="%m/%d/%Y %H:%M %p")
 
 #check if number of incidents matches
-stopifnot(nrow(iitCrime)==nIncedents | (nrow(iitCrime) > nIncedents*0.95 & nrow(iitCrime) < nIncedents*1.05))
+stopifnot(nrow(iitCleaned2)==nIncedents | (nrow(iitCleaned2) > nIncedents*0.95 & nrow(iitCleaned2) < nIncedents*1.05))
+
+#output - df iitCleaned2
+#----------------------------------------------------------------
+
+#save iitCleaned2 as iitCrime
+iitCrime <- iitCleaned2
+
+#writing output to the csv
+write.csv(iitCrime, file = "iit_campus_crimes.csv")
+
+#save iitCrimeCleaned as .rda
+save(iitCrime, file = "iitCrime.rda")
