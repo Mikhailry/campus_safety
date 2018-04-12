@@ -68,9 +68,10 @@ write.csv(uchicago_data, file = "Uchicago_campus_crimes_raw.csv", fileEncoding =
 # We want to read this hmtl table and convert it into a data frame
 
 
-
-uchicago_data <- read.csv("Uchicago_campus_crimes_raw.csv")
+uchicago_data <- read.csv("Uchicago_campus_crimes_cleaned.csv")
+View(uchicago_data)
 head(uchicago_data)
+uchicago_data <- read.csv("Uchicago_campus_crimes_raw.csv")
 nrow(uchicago_data) #5371 rows
 ncol(uchicago_data) # 8 columns
 names(uchicago_data)
@@ -268,5 +269,62 @@ View(data_cpy)
 uchicago_data <- data_cpy
 write.csv(uchicago_data, file = "Uchicago_campus_crimes_cleaned.csv", fileEncoding = "UTF-8")
 
+uchicago_data <- read.csv("Uchicago_campus_crimes_cleaned.csv")
+head(uchicago_data)
+length(unique(uchicago_data$Location.Address)) #1562 unique addresses
+attach(uchicago_data)
+freq.addresses <- data.frame(table(Location.Address, useNA = 'always'))
+
+attach(freq.addresses)
+ordered_freq.addresses <- freq.addresses[order(-Freq), ]
+head(ordered_freq.addresses,10)
+
+library(ggmap)
+library(dplyr)
+place <- as.character(ordered_freq.addresses$Location.Address[1])
+typeof(place)
+
+nrow(dplyr::filter(ordered_freq.addresses, !(grepl('between', ordered_freq.addresses$Location.Address) |
+                     grepl('to', ordered_freq.addresses$Location.Address))
+                     )) #210 locations
+nrow(dplyr::filter(ordered_freq.addresses, 
+                     grepl('[^(between)]', 
+                           ordered_freq.addresses$Location.Address))) #210 locations))
 
 
+nrow(ordered_freq.addresses)
+geocode("Hyde Park Kimbark")
+
+#install.packages("gsubfn")
+#ibrary(gsubfn)
+
+address_mod <- function(location) {
+  changes <- gsub("E\\.", "East", location)
+  changes <- gsub("W\\.", "West", changes)
+  changes <- gsub('S\\.', "South", changes)
+  changes <- gsub("N\\.", "North", changes)
+  changes <- gsub("St\\.", "Street", changes)
+  changes <- gsub("Pl\\.", "Place", changes)
+  return (changes)
+}
+
+
+ordered_freq.addresses$Location.Address <- sapply(ordered_freq.addresses$Location.Address, address_mod)
+head(ordered_address_V1,50)
+
+simple_addresses <- dplyr::filter(ordered_freq.addresses, !(grepl('between', ordered_freq.addresses$Location.Address) |
+                                                              grepl('to', ordered_freq.addresses$Location.Address)))
+
+stopifnot(length(ordered_address_V1) == nrow(ordered_freq.addresses))
+nrow(simple_addresses)
+address_ext = function(Location) {
+
+  if (location != ""  )
+    return (geocode(location))
+}
+
+address_ext()
+
+simple_addresses['lat-lon'] <- sapply(simple_addresses$Location.Address, geocode)
+head(simple_addresses)
+tail(simple_addresses)
