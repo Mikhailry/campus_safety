@@ -15,8 +15,8 @@ Uchicago_campus_crimes_cleaned <- read_csv("~/Documents/Math 571 project/Uchicag
 #Convert date/time into CDT time for area crime
 attr(Crime_2014toPres_IIT_area$Date,"tzone")<-"America/Chicago"
 attr(Crime_2014toPres_UC_area$Date,"tzone")<-"America/Chicago"
-Crime_2014toPres_IIT_area$Date<-Crime_2014toPres_IIT_area+hours(5)
-Crime_2014toPres_UC_area$Date<-Crime_2014toPres_UC_area+hours(5)
+Crime_2014toPres_IIT_area$Date<-Crime_2014toPres_IIT_area$Date+hours(5)
+Crime_2014toPres_UC_area$Date<-Crime_2014toPres_UC_area$Date+hours(5)
 
 #Add new columns for weather condition
 Crime_2014toPres_IIT_area[,'weather_cond']<-NA
