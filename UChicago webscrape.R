@@ -323,8 +323,9 @@ address_ext = function(Location) {
     return (geocode(location))
 }
 
+geocode("Hyde Park & Dorchester chicago")
 address_ext()
 
 simple_addresses['lat-lon'] <- sapply(simple_addresses$Location.Address, geocode)
 head(simple_addresses)
-tail(simple_addresses)
+tail(simple_addresses, 100)
