@@ -286,8 +286,33 @@ library(ggmap)
 
 library(dplyr)
 ordered_freq.addresses <- ordered_freq.addresses[1:(nrow(ordered_freq.addresses) - 1),  ]
-#Checking for empty addresses
-filter(ordered_freq.addresses, ordered_freq.addresses$Location.Address == "")
+head(ordered_freq.addresses)
+
+address_mod <- function(location) {
+  changes <- gsub("E\\.", "East", location)
+  changes <- gsub("W\\.", "West", changes)
+  changes <- gsub('S\\.', "South", changes)
+  changes <- gsub("N\\.", "North", changes)
+  changes <- gsub("St\\.", "Street", changes)
+  changes <- gsub("Pl\\.", "Place", changes)
+  changes <- gsub("E\\,", "East", changes)
+  changes <- gsub("W\\,", "West", changes)
+  changes <- gsub('S\\,', "South", changes)
+  changes <- gsub("N\\,", "North", changes)
+  changes <- gsub("Hwy\\.", "Highway", changes)
+  changes <- gsub("St\\,", "Street", changes)
+  changes <- gsub("Dr\\.", "Drive", changes)
+  changes <- gsub(", IL", "", changes)
+  changes <- gsub(", IN", "", changes)
+  return (changes)
+}
+
+
+ordered_freq.addresses$Location.Address <- sapply(ordered_freq.addresses$`Original address`, address_mod)
+View(ordered_freq.addresses)
+
+
+
 
 #values without having the separations
 subset_address_1 <- dplyr::filter(ordered_freq.addresses, !( grepl("/", ordered_freq.addresses$Location.Address)|
@@ -326,12 +351,11 @@ subset_address_3 <- separate(subset_address_3, Part2, c("Part3", 'Part4')
 #subset_address[,3:5]
 
 #Merging part1 and part 3, part 1 and part 4
-subset_address_3[is.na(subset_address)] <- ""
+subset_address_3[is.na(subset_address_3)] <- ""
 subset_address_3$'New Part 1' <- NULL
 subset_address_3$'New Part 2' <- NULL
-subset_address_3['New Part 1'] <- paste(subset_address_3$Part1, subset_address_3$Part3)
-subset_address_3['New Part 2'] <- paste(subset_address_3$Part1, subset_address_3$Part4)
-
+subset_address_3['New Part 1'] <- paste(subset_address_3$Part1, 'and', subset_address_3$Part3)
+subset_address_3['New Part 2'] <- paste(subset_address_3$Part1, 'and', subset_address_3$Part4)
 #separating based on 'to'
 
 subset_address_4 <- separate(subset_address_4, Location.Address, c("New Part 1", 'New Part 2')
@@ -349,16 +373,41 @@ subset_address_3$'Part4' <- NULL
 subset_address_5 <- rbind(subset_address_3, subset_address_4)
 subset_address_5$'Location.Address' <- paste(subset_address_5$`New Part 1`, subset_address_5$`New Part 2`, sep = ",")
 #nrow(subset_address_3) + nrow(subset_address_4 ) == nrow(subset_address_5)
-?append
+#?append
 subset_address_5$'New Part 1' <- NULL
 subset_address_5$'New Part 2' <- NULL
 finalized_addresses <- rbind(subset_address_1, subset_address_5)
 View(finalized_addresses)
 
+
+
+
+finalized_addresses$Location.Address <- gsub("Midway Place", "Midway Plaisance", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("&", "and", finalized_addresses$Location.Address)
+#finalized_addresses$Location.Address <- gsub("Dr//.", "Drive", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub(" near ", " and ", finalized_addresses$Location.Address)
+split_df <- dplyr::filter(finalized_addresses, (grepl(" or ", finalized_addresses$Location.Address)))
+split_val <- trimws(unlist(strsplit(split_df$Location.Address, "or")))
+split_val[2]
+
+#View(finalized_addresses)
+finalized_addresses$Location.Address <- gsub("48th and Woodlawn or 48th and Ellis", 
+                                             paste(split_val[1], split_val[2], sep = ","), finalized_addresses$Location.Address)
+
+finalized_addresses$Location.Address <- gsub("6054 South Drexel / Parking Structure,", "6054 South Drexel", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("4900 South East End / Public Way),", " 4900 South East End", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("5487-91 South Hyde Park / Fraternity House,", "5487-91 South Hyde Park", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("5500 South Lake Park / Unknown Location,", "5500 South Lake Park", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("55th,56th / University", "55th and University,56th and University", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("Lake Park / 48th,49th", "48th and Lake Park,49th and Lake Park", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("UC Campus / Max Palevsky Residence Hall,", "Max Palevsky Residence Hall", finalized_addresses$Location.Address)
+dplyr::filter(finalized_addresses, (grepl("/", finalized_addresses$Location.Address)))
+
 write.csv(finalized_addresses, file = "Address dictionary_UChicago.csv", fileEncoding = "UTF-8")
 #dplyr::filter(finalized_addresses, (grepl("//.", finalized_addresses$Location.Address)))
 
-
+finalized_addresses <- read.csv("Uchicago_campus_crimes_partlycleaned.csv")
+View(finalized_addresses)
 nrow(ordered_freq.addresses) == nrow(finalized_addresses)
 
 geocode("Hyde Park Kimbark")
@@ -366,26 +415,6 @@ geocode("Hyde Park Kimbark")
 #install.packages("gsubfn")
 #ibrary(gsubfn)
 
-address_mod <- function(location) {
-  changes <- gsub("E\\.", "East", location)
-  changes <- gsub("W\\.", "West", changes)
-  changes <- gsub('S\\.', "South", changes)
-  changes <- gsub("N\\.", "North", changes)
-  changes <- gsub("St\\.", "Street", changes)
-  changes <- gsub("Pl\\.", "Place", changes)
-  changes <- gsub("E\\,", "East", changes)
-  changes <- gsub("W\\,", "West", changes)
-  changes <- gsub('S\\,', "South", changes)
-  changes <- gsub("N\\,", "North", changes)
-  changes <- gsub("Hwy\\.", "Highway", changes)
-  changes <- gsub("St\\,", "Street", changes)
-  changes <- gsub(", IL", "", changes)
-  changes <- gsub(", IN", "", changes)
-  return (changes)
-}
-
-
-ordered_freq.addresses$Location.Address <- sapply(ordered_freq.addresses$`Original address`, address_mod)
 head(ordered_freq.addresses)
 nrow(ordered_freq.addresses)
 tail(ordered_freq.addresses)
