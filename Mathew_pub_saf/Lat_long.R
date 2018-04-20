@@ -6,7 +6,7 @@ setwd(gsub("\\\\","//", readClipboard()))
 
 
 #UC_stand <- read.csv("UC_stand.csv")
-UC_add_dic <- read.csv("Address dictionary_UChicago.csv")
+UC_add_dic <- read.csv("D:/Github/CSP571/Project/campus_safety/Address dictionary_UChicago.csv")
 IIT_Crime <- iitCrime # Use file iitcrime_with_add in campus_safety
 
 
@@ -251,7 +251,7 @@ incorrect2 <- which(IIT_Crime$Address == "3100 south")
 incorrect3 <- which(IIT_Crime$Address == "3300 south")
 incorrect4 <- which(IIT_Crime$Address == "3500 south")
 
-levels(IIT_Crime$Address) <- c(levels(IIT_Crime$Address),"3200 South State Street","3100 South State street","3300 South State Street","3500 South State Street")
+levels(IIT_Crime$Address) <- c(levels(IIT_Crime$Address),"State & 32nd Street","3100 South State street","3300 South State Street","3500 South State Street")
 IIT_Crime$Address[incorrect1] <- "State & 32nd Street"
 IIT_Crime$Address[incorrect2] <- "3100 South State street"
 IIT_Crime$Address[incorrect3] <- "3300 South State Street"
@@ -267,4 +267,10 @@ IIT_Crime <- IIT_Crime %>% separate(lat_long,c("Latitude", "Longitude"), ",", re
 
 IIT_Crime$Latitude <- as.numeric(IIT_Crime$Latitude)
 IIT_Crime$Longitude <- as.numeric(IIT_Crime$Longitude)
+
+
+IIT_Crime$lat_long <- as.character(IIT_Crime$lat_long)
+
+write.csv(IIT_Crime,file = "IIT_Crime_to_finstand.csv")
+
 
