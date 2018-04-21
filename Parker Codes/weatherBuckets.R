@@ -134,5 +134,31 @@ hist(Crime_2014toPres_UC_area$Month, xlab = 'Month', ylab = '# of Crimes', main 
 axis(1, at=seq(1,12,1), labels=c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'))
 
 
+#Histogram of weekday and weekends
+iitCrime$weekday<-weekdays(iitCrime$Occured)
+Uchicago_campus_crimes_cleaned$weekday<-weekdays(Uchicago_campus_crimes_cleaned$posixTime)
+Crime_2014toPres_IIT_area$weekday<-weekdays(Crime_2014toPres_IIT_area$Date)
+Crime_2014toPres_UC_area$weekday<-weekdays(Crime_2014toPres_UC_area$Date)
+plot(factor(iitCrime$weekday), xlab='Weekday',ylab='# of Crimes', main='IIT Public Safety')
+plot(factor(Uchicago_campus_crimes_cleaned$weekday), xlab='Weekday',ylab='# of Crimes', main='UC Public Safety')
+plot(factor(Crime_2014toPres_IIT_area$weekday),xlab='Weekday',ylab='# of Crimes', main='IIT Area')
+plot(factor(Crime_2014toPres_UC_area$weekday), xlab='Weekday',ylab='# of Crimes', main='UC Area')
 
+#Histogram of weather data from 
+load("~/Documents/Math 571 project/Data/cleanWeatherFull.Rda")
+plot(factor(weatherFull$cond))
+plot(factor(weatherFull$condition))
+sort(table(factor(weatherFull$cond)), decreasing = TRUE)
+plot(sort(table(factor(weatherFull$cond)), decreasing = TRUE)[1:8])
 
+#TODO
+#Normalize weather conditions for crime.
+weather_freq<-data.frame(table(weatherFull$condition))
+weather_freq$Freq<-data.frame(table(iitCrime$weather_cond))[,2]/weather_freq[,2]
+plot(weather_freq, type='h')
+
+#temperature ans crime frequency as a scatter plot
+plot(table(round(iitCrime$temperature)), type = 'p')
+plot(table(round(Uchicago_campus_crimes_cleaned$temperature)), type = 'p')
+plot(table(round(Crime_2014toPres_IIT_area$temperature)), type = 'p')
+plot(table(round(Crime_2014toPres_UC_area$temperature)), type = 'p')
