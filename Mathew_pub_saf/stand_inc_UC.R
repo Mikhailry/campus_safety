@@ -178,4 +178,8 @@ UC_mod[inc_other[!inc_other %in% temp],c("Stand_inc","Comments...Nature.of.Fire"
 
 #OTHER category includes warrant arrest, lost and found, finding stolen objects(cars, etc.)
 
-write.csv(UC_mod,"UC_stand.csv")
+#write.csv(UC_mod,"UC_stand.csv")
+
+
+#######
+
