@@ -1,4 +1,5 @@
 library(lubridate)
+library(readr)
 #read data
 IIT_FINAL_AGG <- read_csv("~/Documents/Math 571 project/IIT_FINAL_AGG.csv")
 UC_FINAL_AGG <- read_csv("~/Documents/Math 571 project/UC_FINAL_AGG.csv")
@@ -43,6 +44,7 @@ UC_FINAL_AGG$HUM<-NA
 UC_FINAL_AGG$WIND<-NA
 UC_FINAL_AGG$PRECIP<-NA
 
+start<-Sys.time()
 for (i in 1:length(IIT_FINAL_AGG$OCCURED)){
   min_diff<-min(abs(IIT_FINAL_AGG$OCCURED[i]-weatherFull$date))
   row<-as.numeric(row.names(weatherFull[abs(IIT_FINAL_AGG$OCCURED[i]-weatherFull$date)==min_diff,]))
@@ -66,6 +68,7 @@ for (i in 1:length(UC_FINAL_AGG$OCCURED)){
   UC_FINAL_AGG$HUM[i]<-weatherFull$hum[row][1]
   UC_FINAL_AGG$PRECIP[i]<-weatherFull$precip[row][1]
 }
+end<-Sys.time()
 
 #Spots where precip is NA shoul dbe 0.00
 IIT_FINAL_AGG$PRECIP[is.na(IIT_FINAL_AGG$PRECIP)]<-0.00
