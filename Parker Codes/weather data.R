@@ -1,5 +1,4 @@
 #https://cran.r-project.org/web/packages/rwunderground/README.html
-vcxvc#https://cran.r-project.org/web/packages/rwunderground/README.html
 library(devtools)
 devtools::install_github('ALShum/rwunderground')
 library(rwunderground)
