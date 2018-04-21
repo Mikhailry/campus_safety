@@ -284,6 +284,6 @@ coordinates <- function(x){
   
 }
 
-coordinates("565 W Adams St Chicago IL 60661")
+#coordinates("565 W Adams St Chicago IL 60661")
 ```
 
