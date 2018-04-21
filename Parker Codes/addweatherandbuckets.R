@@ -55,12 +55,23 @@ for (i in 1:length(IIT_FINAL_AGG$OCCURED)){
   IIT_FINAL_AGG$PRECIP[i]<-weatherFull$precip[row][1]
 }
 
-for (i in 1:length(Crime_2014toPres_IIT_area$Date)){
-  min_diff<-min(abs(Crime_2014toPres_IIT_area$Date[i]-weatherFull$date))
-  row<-as.numeric(row.names(weatherFull[abs(Crime_2014toPres_IIT_area$Date[i]-weatherFull$date)==min_diff,]))
-  Crime_2014toPres_IIT_area$weather_cond[i]<-weatherFull$condition[row][1]
-  Crime_2014toPres_IIT_area$weather_sev[i]<-weatherFull$severity[row][1]
-  Crime_2014toPres_IIT_area$temperature[i]<-weatherFull$temp[row][1]
-  Crime_2014toPres_IIT_area$weather_cond_exact[i]<-weatherFull$cond[row][1]
+for (i in 1:length(UC_FINAL_AGG$OCCURED)){
+  min_diff<-min(abs(UC_FINAL_AGG$OCCURED[i]-weatherFull$date))
+  row<-as.numeric(row.names(weatherFull[abs(UC_FINAL_AGG$OCCURED[i]-weatherFull$date)==min_diff,]))
+  UC_FINAL_AGG$STAND_COND[i]<-weatherFull$condition[row][1]
+  UC_FINAL_AGG$SEVERITY[i]<-weatherFull$severity[row][1]
+  UC_FINAL_AGG$TEMP[i]<-weatherFull$temp[row][1]
+  UC_FINAL_AGG$COND[i]<-weatherFull$cond[row][1]
+  UC_FINAL_AGG$WIND[i]<-weatherFull$wind_spd[row][1]
+  UC_FINAL_AGG$HUM[i]<-weatherFull$hum[row][1]
+  UC_FINAL_AGG$PRECIP[i]<-weatherFull$precip[row][1]
 }
 
+#Spots where precip is NA shoul dbe 0.00
+IIT_FINAL_AGG$PRECIP[is.na(IIT_FINAL_AGG$PRECIP)]<-0.00
+UC_FINAL_AGG$PRECIP[is.na(IIT_FINAL_AGG$PRECIP)]<-0.00
+
+#Save data
+setwd("~/Documents/Math 571 project")
+save(IIT_FINAL_AGG, file = 'IIT_FINAL_AGG.Rda')
+save(UC_FINAL_AGG, file = 'UC_FINAL_AGG.Rda')
