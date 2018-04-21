@@ -68,9 +68,10 @@ write.csv(uchicago_data, file = "Uchicago_campus_crimes_raw.csv", fileEncoding =
 # We want to read this hmtl table and convert it into a data frame
 
 
-
-uchicago_data <- read.csv("Uchicago_campus_crimes_raw.csv")
+uchicago_data <- read.csv("Uchicago_campus_crimes_cleaned.csv")
+View(uchicago_data)
 head(uchicago_data)
+uchicago_data <- read.csv("Uchicago_campus_crimes_raw.csv")
 nrow(uchicago_data) #5371 rows
 ncol(uchicago_data) # 8 columns
 names(uchicago_data)
@@ -268,5 +269,216 @@ View(data_cpy)
 uchicago_data <- data_cpy
 write.csv(uchicago_data, file = "Uchicago_campus_crimes_cleaned.csv", fileEncoding = "UTF-8")
 
+
+uchicago_data <- read.csv("UC_stand.csv")
+head(uchicago_data)
+length(unique(uchicago_data$Location.Address)) #1560 unique addresses
+attach(uchicago_data)
+freq.addresses <- data.frame(table(uchicago_data$Location.Address, useNA = 'always'))
+
+attach(freq.addresses)
+ordered_freq.addresses <- freq.addresses[order(-freq.addresses$Freq), ]
+nrow(ordered_freq.addresses)
+head(ordered_freq.addresses,10)
+tail(ordered_freq.addresses)
+names(ordered_freq.addresses)[1] <- 'Original address'
+library(ggmap)
+
+library(dplyr)
+ordered_freq.addresses <- ordered_freq.addresses[1:(nrow(ordered_freq.addresses) - 1),  ]
+head(ordered_freq.addresses)
+
+address_mod <- function(location) {
+  changes <- gsub("E\\.", "East", location)
+  changes <- gsub("W\\.", "West", changes)
+  changes <- gsub('S\\.', "South", changes)
+  changes <- gsub("N\\.", "North", changes)
+  changes <- gsub("St\\.", "Street", changes)
+  changes <- gsub("Pl\\.", "Place", changes)
+  changes <- gsub("E\\,", "East", changes)
+  changes <- gsub("W\\,", "West", changes)
+  changes <- gsub('S\\,', "South", changes)
+  changes <- gsub("N\\,", "North", changes)
+  changes <- gsub("Hwy\\.", "Highway", changes)
+  changes <- gsub("St\\,", "Street", changes)
+  changes <- gsub("Dr\\.", "Drive", changes)
+  changes <- gsub(", IL", "", changes)
+  changes <- gsub(", IN", "", changes)
+  return (changes)
+}
+
+
+ordered_freq.addresses$Location.Address <- sapply(ordered_freq.addresses$`Original address`, address_mod)
+View(ordered_freq.addresses)
+
+
+
+
+#values without having the separations
+subset_address_1 <- dplyr::filter(ordered_freq.addresses, !( grepl("/", ordered_freq.addresses$Location.Address)|
+                                                          grepl(" to ", ordered_freq.addresses$Location.Address) |
+                                                          grepl('between', ordered_freq.addresses$Location.Address) |
+                                                            grepl('Between', ordered_freq.addresses$Location.Address)  ))
+#values having separations
+subset_address_2 <- dplyr::filter(ordered_freq.addresses, ( grepl("/", ordered_freq.addresses$Location.Address)|
+                                                               grepl(" to ", ordered_freq.addresses$Location.Address) |
+                                                               grepl('between', ordered_freq.addresses$Location.Address) |
+                                                               grepl('Between', ordered_freq.addresses$Location.Address)  ))
+#values having between and Between
+subset_address_3 <- dplyr::filter(subset_address_2, ( grepl('between', subset_address_2$Location.Address) |
+                                                               grepl('Between', subset_address_2$Location.Address)  ))
+#values having to and /
+subset_address_4 <- dplyr::filter(subset_address_2, !( grepl('between', subset_address_2$Location.Address) |
+                                                        grepl('Between', subset_address_2$Location.Address)  ))
+
+
+#checking whether ':' is present in addresses
+#dplyr::filter(ordered_freq.addresses, (grepl(",", ordered_freq.addresses$Location.Address)))
+nrow(subset_address)
+head(subset_address)
+#Basic splitting mechanism
+#separating based on 'between' and 'Between'
+toMatch <- c("Between", "between")
+subset_address_3 <- separate(subset_address_3, Location.Address, c("Part1", 'Part2')
+                     , sep=paste(toMatch,collapse="|") 
+                     , remove=TRUE)
+#nrow(dplyr::filter(subset_address, (grepl("&", subset_address$Part2))))
+#splitting second part based on '&'
+toMatch <- c("&", " and ")
+subset_address_3 <- separate(subset_address_3, Part2, c("Part3", 'Part4')
+                           , sep=paste(toMatch,collapse="|") 
+                           , remove=TRUE)
+#subset_address[,3:5]
+
+#Merging part1 and part 3, part 1 and part 4
+subset_address_3[is.na(subset_address_3)] <- ""
+subset_address_3$'New Part 1' <- NULL
+subset_address_3$'New Part 2' <- NULL
+subset_address_3['New Part 1'] <- paste(subset_address_3$Part1, 'and', subset_address_3$Part3)
+subset_address_3['New Part 2'] <- paste(subset_address_3$Part1, 'and', subset_address_3$Part4)
+#separating based on 'to'
+
+subset_address_4 <- separate(subset_address_4, Location.Address, c("New Part 1", 'New Part 2')
+                             , sep=" to "
+                             , remove=TRUE)
+#nrow(dplyr::filter(subset_address, (grepl("&", subset_address$Part2))))
+#splitting second part based on '&'
+
+subset_address_4[is.na(subset_address_4)] <- ""
+subset_address_3[is.na(subset_address_3)] <- ""
+subset_address_3$'Part1' <- NULL
+subset_address_3$'Part3' <- NULL
+subset_address_3$'Part4' <- NULL
+
+subset_address_5 <- rbind(subset_address_3, subset_address_4)
+subset_address_5$'Location.Address' <- paste(subset_address_5$`New Part 1`, subset_address_5$`New Part 2`, sep = ",")
+#nrow(subset_address_3) + nrow(subset_address_4 ) == nrow(subset_address_5)
+#?append
+subset_address_5$'New Part 1' <- NULL
+subset_address_5$'New Part 2' <- NULL
+finalized_addresses <- rbind(subset_address_1, subset_address_5)
+View(finalized_addresses)
+
+
+
+
+finalized_addresses$Location.Address <- gsub("Midway Place", "Midway Plaisance", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("&", "and", finalized_addresses$Location.Address)
+#finalized_addresses$Location.Address <- gsub("Dr//.", "Drive", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub(" near ", " and ", finalized_addresses$Location.Address)
+split_df <- dplyr::filter(finalized_addresses, (grepl(" or ", finalized_addresses$Location.Address)))
+split_val <- trimws(unlist(strsplit(split_df$Location.Address, "or")))
+split_val[2]
+
+#View(finalized_addresses)
+finalized_addresses$Location.Address <- gsub("48th and Woodlawn or 48th and Ellis", 
+                                             paste(split_val[1], split_val[2], sep = ","), finalized_addresses$Location.Address)
+
+finalized_addresses$Location.Address <- gsub("6054 South Drexel / Parking Structure,", "6054 South Drexel", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("4900 South East End / Public Way),", " 4900 South East End", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("5487-91 South Hyde Park / Fraternity House,", "5487-91 South Hyde Park", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("5500 South Lake Park / Unknown Location,", "5500 South Lake Park", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("55th,56th / University", "55th and University,56th and University", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("Lake Park / 48th,49th", "48th and Lake Park,49th and Lake Park", finalized_addresses$Location.Address)
+finalized_addresses$Location.Address <- gsub("UC Campus / Max Palevsky Residence Hall,", "Max Palevsky Residence Hall", finalized_addresses$Location.Address)
+dplyr::filter(finalized_addresses, (grepl("/", finalized_addresses$Location.Address)))
+
+write.csv(finalized_addresses, file = "Address dictionary_UChicago.csv", fileEncoding = "UTF-8")
+#dplyr::filter(finalized_addresses, (grepl("//.", finalized_addresses$Location.Address)))
+
+finalized_addresses <- read.csv("Uchicago_campus_crimes_partlycleaned.csv")
+View(finalized_addresses)
+nrow(ordered_freq.addresses) == nrow(finalized_addresses)
+
+geocode("Hyde Park Kimbark")
+
+#install.packages("gsubfn")
+#ibrary(gsubfn)
+
+head(ordered_freq.addresses)
+nrow(ordered_freq.addresses)
+tail(ordered_freq.addresses)
+ordered_freq.addresses_V1 <- ordered_freq.addresses[1:(nrow(ordered_freq.addresses) - 1),  ]
+head(ordered_freq.addresses_V1)
+tail(ordered_freq.addresses_V1)
+simple_addresses <- dplyr::filter(ordered_freq.addresses_V1, !(grepl('between', ordered_freq.addresses_V1$Location.Address) |
+                                                              grepl('to', ordered_freq.addresses_V1$Location.Address)))
+
+stopifnot(length(ordered_address_V1) == nrow(ordered_freq.addresses))
+nrow(simple_addresses)
+
+install.packages("googleway")
+key <- 'AIzaSyAEmFXnK_n2Xw50Di72MY5a8sFj41zAh9Q'
+
+coordinates <- function(x){
+  
+  address <- paste(x,"Chicago IL", sep = " ")
+  
+  temp<-geocode(address, output='all', messaging=TRUE, override_limit=TRUE)
+  
+  while(temp$status == "OVER_QUERY_LIMIT"){
+
+    Sys.sleep(3)
+    
+    temp <- geocode(address, output='all', messaging=TRUE, override_limit=TRUE)
+
+    
+  }
+  
+  if(temp$status == "ZERO_RESULTS")#if there is no result
+    
+  {
+    return(NA)
+ 
+  }
+ 
+  Latitude <- temp$results[[1]]$geometry$location$lat #returns lat
+  Longitude <- temp$results[[1]]$geometry$location$lng #returns long
+  
+  
+  return(paste(Latitude,Longitude,sep = ","))
+  
+}
+
+coordinates("5815 South Maryland")
+Sys.sleep(2)
+address_ext()
+library(googleway)
+geocode("5815 South Maryland")
+#lat_lon <- google_geocode(address = "5815 South Maryland", key = key)
+#lat_lon$results$geometry$location
+install.packages('devtools')
+library(devtools)
+install.packages('ggplot2')
+devtools::install_github("dkahle/ggmap")
+example <- sapply(simple_addresses$Location.Address[1:2], address_ext)
+
+head(simple_addresses$`lat-lon1`)
+example<- lapply(simple_addresses$Location.Address, coordinates)
+simple_addresses$`lat-lon` <- example
+simple_addresses$`lat-lon` <- NULL
+head(simple_addresses)
+View(simple_addresses)
+tail(simple_addresses, 100)
 
 
