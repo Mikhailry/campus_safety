@@ -162,10 +162,9 @@ test <- as.data.frame(test)
 UC_add_dic$Latitutde <- test$Latitude
 UC_add_dic$Longitude <- test$Longitude
 
-#1556,1557,1558, 15527<- NA
+UC_add_dic <- UC_add_dic[,c(1,10,11)]
 
-#IIT_Crime %>% separate(IIT_Crime$Lat_Long, c(Lat,Long))
-
+write.csv(UC_add_dic,"Address_dic_UC_with_lat_long.csv")
 
 # Lat long for IIT
 head(IIT_Crime)
@@ -272,5 +271,4 @@ IIT_Crime$Longitude <- as.numeric(IIT_Crime$Longitude)
 IIT_Crime$lat_long <- as.character(IIT_Crime$lat_long)
 
 write.csv(IIT_Crime,file = "IIT_Crime_to_finstand.csv")
-
 
