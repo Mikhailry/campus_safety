@@ -27,9 +27,6 @@ IIT_FINAL_AGG$SECTOR<-factor(IIT_FINAL_AGG$SECTOR)
 attach(IIT_FINAL_AGG)
 IIT_FINAL_AGG<-IIT_FINAL_AGG[order(OCCURED),]
 
-#Split campus and off campus
-data1<-IIT_FINAL_AGG[,IIT_FINAL_AGG$TYPE_OF_DATA=='IIT-CAMPUS']
-
 #split into 80%, 20%
 train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$X1)),]
 test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$X1)):length(IIT_FINAL_AGG$X1),]
