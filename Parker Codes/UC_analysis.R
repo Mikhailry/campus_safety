@@ -27,9 +27,6 @@ UC_FINAL_AGG$SECTOR<-factor(UC_FINAL_AGG$SECTOR)
 attach(UC_FINAL_AGG)
 UC_FINAL_AGG<-UC_FINAL_AGG[order(OCCURED),]
 
-#Split campus and off campus
-data1<-UC_FINAL_AGG[,UC_FINAL_AGG$TYPE_OF_DATA=='UC-CAMPUS']
-
 #split into 80%, 20%
 train<-UC_FINAL_AGG[1:(.8*length(UC_FINAL_AGG$X1)),]
 test<-UC_FINAL_AGG[(.8*length(UC_FINAL_AGG$X1)):length(UC_FINAL_AGG$X1),]
