@@ -1,6 +1,7 @@
 library(nnet)
 library(MASS)
 library(caret)
+library(e1071)
 load("~/Documents/Math 571 project/UC_FINAL_AGG.Rda")
 
 createModelFormula <- function(targetVar, xVars, includeIntercept = TRUE){
@@ -25,6 +26,9 @@ UC_FINAL_AGG$SEVERITY<-as.factor(UC_FINAL_AGG$SEVERITY)
 attach(UC_FINAL_AGG)
 UC_FINAL_AGG<-UC_FINAL_AGG[order(OCCURED),]
 
+#Split campus and off campus
+data1<-UC_FINAL_AGG[,UC_FINAL_AGG$TYPE_OF_DATA=='UC-CAMPUS']
+
 #split into 80%, 20%
 train<-UC_FINAL_AGG[1:(.8*length(UC_FINAL_AGG$X1)),]
 test<-UC_FINAL_AGG[(.8*length(UC_FINAL_AGG$X1)):length(UC_FINAL_AGG$X1),]
@@ -36,19 +40,10 @@ finalModel<-stepAIC(model, direction = 'forward')
 
 
 #Naive Bayes
-xVars<-colnames(Data)[-24]
-#need to change the decsion variable into a factor
-Data2<-Data
-train2<-train
-test2<-test
-Data2$default<-as.factor(Data2$default)
-test2$default<-as.factor(test2$default)
-train2$default<-as.factor(train2$default)
+targetVar<-'SECTOR'
+xVars<-colnames(UC_FINAL_AGG)[c(5:9,11:20)]
 #use naive bayes
 modelForm<-createModelFormula(targetVar,xVars)
-naiveBayesModel<-naiveBayes(modelForm, train2)
-NB_pred<-predict(naiveBayesModel, test2)
-confusionMatrix(NB_pred,test2$default)
-
-
-
+naiveBayesModel<-naiveBayes(modelForm, train)
+NB_pred<-predict(naiveBayesModel, test)
+confusionMatrix(NB_pred,test$SECTOR)
