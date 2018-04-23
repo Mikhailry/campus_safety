@@ -21,7 +21,7 @@ library(chron)
 # sample <- sample[order(sample$OCCURED),]
 # View(sample)
 
-sample <- IIT_FINAL_AGG
+#sample <- IIT_FINAL_AGG
 IIT_FINAL_AGG$OCCURED <- as.POSIXct(IIT_FINAL_AGG$OCCURED)
 IIT_FINAL_AGG <- IIT_FINAL_AGG[order(IIT_FINAL_AGG$OCCURED),]
 
@@ -29,11 +29,20 @@ IIT_FINAL_AGG <- IIT_FINAL_AGG[order(IIT_FINAL_AGG$OCCURED),]
 IIT_FINAL_AGG$X1 <- c(1:nrow(IIT_FINAL_AGG))
 names(IIT_FINAL_AGG)[1] <- 'Index'
 
+#Ordering is done . Lets change the occured to numeric to be added as predictor variable
+IIT_FINAL_AGG$OCCURED <- as.numeric(IIT_FINAL_AGG$OCCURED)
 #Ordering is done .. now need to convert necessary labels to factor types
 
 
 #First is incident type
 levels(as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)) # 5 levels
+#lets build two classes out of the incidents
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="NON CRIMINAL")] <- "MILD INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PROPERTY CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SUBSTANCE CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PERSON CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SERIOUS CRIME")] <- "SERIOUS INCIDENTS"
+
 IIT_FINAL_AGG$INCIDENT_TYPE2 <- as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)
 #class(IIT_FINAL_AGG$INCIDENT_TYPE2)
 #original_incidents_list <- IIT_FINAL_AGG$INCIDENT_TYPE1
@@ -44,14 +53,6 @@ IIT_FINAL_AGG$INCIDENT_TYPE2 <- as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)
 
 levels(as.factor(IIT_FINAL_AGG$SECTOR)) #20 labels. This is our target variable
 
-#Lets move the sector column to the end as part of the convention
-sample <- IIT_FINAL_AGG
-IIT_FINAL_AGG <- IIT_FINAL_AGG[,c(1:9, 11:ncol(IIT_FINAL_AGG), 10)]
-
-
-stopifnot(ncol(sample) == ncol(IIT_FINAL_AGG))
-
-
 
 #lets check the same for month, day and time buckets
 
@@ -59,6 +60,7 @@ levels(as.factor(IIT_FINAL_AGG$MONTH))
 levels(as.factor(IIT_FINAL_AGG$DAY))
 levels(as.factor(IIT_FINAL_AGG$TIME_BUCKET))
 
+IIT_FINAL_AGG$TYPE_OF_DATA<-as.factor(IIT_FINAL_AGG$TYPE_OF_DATA)
 IIT_FINAL_AGG$MONTH <- as.factor(IIT_FINAL_AGG$MONTH)
 IIT_FINAL_AGG$DAY <- as.factor(IIT_FINAL_AGG$DAY)
 IIT_FINAL_AGG$TIME_BUCKET <- as.factor(IIT_FINAL_AGG$TIME_BUCKET)
@@ -74,7 +76,7 @@ levels(as.factor(IIT_FINAL_AGG$SEVERITY)) # 3 levels
 
 #weather_cond <- IIT_FINAL_AGG$COND 
 #IIT_FINAL_AGG$COND <- NULL
-
+IIT_FINAL_AGG$COND <- as.factor(IIT_FINAL_AGG$COND)
 IIT_FINAL_AGG$STAND_COND <- as.factor(IIT_FINAL_AGG$STAND_COND)
 IIT_FINAL_AGG$SEVERITY <- as.factor(IIT_FINAL_AGG$SEVERITY)
 
@@ -83,7 +85,7 @@ summary(IIT_FINAL_AGG)
 
 #lets look at percent of Null values before proceeding
 options(scipen = 999)
-Null_Counter <- apply(IIT_FINAL_AGG, 2, function(x) length(which(x == "" | is.na(x) | x == "NA" | x == "999" | x == "0" | x == "?"))/length(x))
+Null_Counter <- apply(IIT_FINAL_AGG, 2, function(x) length(which(x == "" | is.na(x) | x == "NA" | x == "999"  | x == "?"))/length(x))
 
 #Ok , there are couple of NA values in the data. Lets start with Occured
 
@@ -111,7 +113,7 @@ summary(IIT_FINAL_AGG$WIND)
 #lets plug NA values in wind with mean
 
 sample <- IIT_FINAL_AGG
-IIT_FINAL_AGG[is.na(IIT_FINAL_AGG[,18]), 18] <- colMeans(IIT_FINAL_AGG[,18], na.rm = TRUE)
+IIT_FINAL_AGG[is.na(IIT_FINAL_AGG[,19]), 19] <- colMeans(IIT_FINAL_AGG[,19], na.rm = TRUE)
 class(IIT_FINAL_AGG$WIND)
 names(IIT_FINAL_AGG[,18])
 
@@ -130,200 +132,93 @@ IIT_FINAL_AGG <- as.data.frame(IIT_FINAL_AGG)
 #Great !! All NA values are dealt with in this case. Now its model building time
 
 #first let build a model solely for IIT campus
+class(IIT_FINAL_AGG)
 
-#Getting IIT campus data in to a Dframe, we will exclude index, location, addrees, occured, incident type1,
-#type of data, latitude, longitude, condition
-View(IIT_FINAL_AGG)
-
-iitdata <- IIT_FINAL_AGG[IIT_FINAL_AGG$TYPE_OF_DATA == 'IIT-CAMPUS',-c(1:8,13)]
-#lets reduce the levels in SECTOR data first
-iitdata$SECTOR <- factor(iitdata$SECTOR)
-
-#lets split data in to training and testing in chronological order
-
-row_id <- (0.8 * nrow(iitdata))
-iitdata_train <- iitdata[1:(0.8 * nrow(iitdata)),]
-iitdata_test <- iitdata[(row_id+1):nrow(iitdata),  ]
-stopifnot(nrow(iitdata_train) + nrow(iitdata_test) == nrow(iitdata)) 
-
-#first , let s fit a naive bayes model
-
-library(e1071)
-Bayes_model <- naiveBayes(SECTOR ~. , data = iitdata_train)
-#lets predict it on test data
-predict_nb <- predict(Bayes_model, iitdata_test)
-#lets look at the confusion matrix
-Actual <- iitdata_test$SECTOR
-confusionMatrix(reference = Actual, data = predict_nb)
-
-
-#lets run Naive bayes on entire data to see if i could mock his results
-
-
-iitdata_complete <- IIT_FINAL_AGG[,-c(1:8,13)]
-#lets reduce the levels in SECTOR data first
-
-
-#lets split data in to training and testing in chronological order
-
-row_id <- as.integer(0.8 * nrow(iitdata_complete))
-iitdata_train_complete <- iitdata_complete[1:row_id,]
-iitdata_test_complete <- iitdata_complete[(row_id+1):nrow(iitdata_complete),  ]
-stopifnot(nrow(iitdata_train_complete) + nrow(iitdata_test_complete) == nrow(iitdata_complete)) 
-
-#first , let s fit a naive bayes model
-
-library(e1071)
-Bayes_model <- naiveBayes(SECTOR ~. , data = iitdata_train_complete)
-#lets predict it on test data
-predict_nb_complete <- predict(Bayes_model, iitdata_test_complete)
-#lets look at the confusion matrix
-Actual <- iitdata_test_complete$SECTOR
-confusionMatrix(reference = Actual, data = predict_nb_complete)
+#split into 80%, 20%
+train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
+test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
 
 
 
+#Naive Bayes
+
+targetVar<-'INCIDENT_TYPE2'
+
+xVars<-colnames(IIT_FINAL_AGG)[c(4,6:8,10:20)]
+levels(test$INCIDENT_TYPE2)
+#use naive bayes
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, train)
+NB_pred<-predict(naiveBayesModel, test)
+NB_pred
+mean(NB_pred == test$GeoHash)
+confusionMatrix(NB_pred,test$INCIDENT_TYPE2)
+
+accuracy.meas(test$INCIDENT_TYPE2,NB_pred)
+roc.curve(test$INCIDENT_TYPE2,NB_pred, plotit = F)
 
 
+#installing sampling packages
+install.packages("ROSE")
+library(ROSE)
+table(train$INCIDENT_TYPE2)
+nrow(train)
 
+#oversampling
+data_balanced_over <- ovun.sample(modelForm, data = train, method = "over",N = 196416)$data
+table(data_balanced_over$INCIDENT_TYPE2)
 
+#undersampling
+data_balanced_under <- ovun.sample(modelForm, data = train, method = "under", N = 10936, seed = 1)$data
 
+table(data_balanced_under$INCIDENT_TYPE2)
 
+#both undersampling and oversampling
 
+data_balanced_both <- ovun.sample(modelForm, data = train, method = "both", p=0.5, N=196416, seed = 1)$data
 
+table(data_balanced_both$INCIDENT_TYPE2)
 
+class(train$COND)
+#synthetic generation of data
+data.rose <- ROSE(modelForm, data = train, seed = 1)$data
+table(data.rose$INCIDENT_TYPE2)
 
+#build naive bayes models
 
+nb.rose <- naiveBayes(modelForm, data = data.rose)
+nb.over <- naiveBayes(modelForm, data = data_balanced_over)
+nb.under <- naiveBayes(modelForm, data = data_balanced_under)
+nb.both <- naiveBayes(modelForm, data = data_balanced_both)
 
+#make predictions
 
+pred.nb.rose <- predict(nb.rose, newdata = test)
+pred.nb.over <- predict(nb.over, newdata = test)
+pred.nb.under <- predict(nb.under, newdata = test)
+pred.nb.both <- predict(nb.both, newdata = test)
 
+head(pred.tree.rose)
+head(pred.tree.rose)
+accuracy.meas(test$INCIDENT_TYPE2,pred.nb.rose)
+roc.curve(test$INCIDENT_TYPE2, pred.nb.rose)
 
+accuracy.meas(test$INCIDENT_TYPE2,pred.nb.over)
+roc.curve(test$INCIDENT_TYPE2,pred.nb.over)
 
+accuracy.meas(test$INCIDENT_TYPE2,pred.nb.under)
+roc.curve(test$INCIDENT_TYPE2,pred.nb.under)
 
+accuracy.meas(test$INCIDENT_TYPE2,pred.nb.both)
+roc.curve(test$INCIDENT_TYPE2,pred.nb.both)
 
+#the balanced accuracy has improved.
 
+#lets try some more techniques
 
-library(rpart)
-install.packages('rattle')
-install.packages('rpart.plot')
-install.packages('RColorBrewer')
-library(rattle)
-library(rpart.plot)
-library(RColorBrewer)
+ctrl <- trainControl(method = "repeatedcv",
+                     number = 10,
+                     repeats = 5,
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE)
 
-fit <- rpart(SECTOR ~. ,
-             data=iitdata_train, 
-            # control=rpart.control(minsplit=50, cp = 0.004),
-             method="class")
-?rpart
-fit
-summary(fit)
-plot(fit)
-fancyRpartPlot(fit)
-
-predicted <- predict(fit, iitdata_test[,-ncol(iitdata_test)], type = "class")
-length(predicted)
-View(iitdata_test[,-ncol(iitdata_test)])
-
-length(predicted)
-table(predicted, iitdata_test$SECTOR)
-Actual <- iitdata_test$SECTOR
-levels(Actual)
-length(Actual)
-library(caret)
-
-confusionMatrix(reference = Actual, data = predicted)
-#Ok , well the results are not so encouraging. The decision tree is not splitting most probably due to
-#lack of values for certain labels.
-
-#Let us now run the model for the entire dataset
-
-iitdata_complete <- IIT_FINAL_AGG[,-c(1:3,5:8,13)]
-
-#lets split data in to training and testing in chronological order
-
-row_id <- as.integer(0.8 * nrow(iitdata_complete))
-iitdata_train <- iitdata_complete[1:row_id,]
-iitdata_test <- iitdata_complete[(row_id+1):nrow(iitdata_complete),  ]
-stopifnot(nrow(iitdata_train) + nrow(iitdata_test) == nrow(iitdata_complete)) 
-View(iitdata_train)
-class(iitdata_train)
-#lets fit new decision tree model
-
-fit_complete <- rpart(SECTOR ~. ,
-             data=iitdata_train, 
-             control=rpart.control(minsplit=2, cp = 0),
-             method="class")
-
-summary(fit_complete)
-plot(fit)
-fancyRpartPlot(fit)
-
-predicted <- predict(fit_complete, iitdata_test[,-ncol(iitdata_test)], type = "class")
-length(predicted)
-View(iitdata_test[,-ncol(iitdata_test)])
-
-length(predicted)
-table(predicted, iitdata_test$SECTOR)
-Actual <- iitdata_test$SECTOR
-length(Actual)
-confusionMatrix(reference = Actual, data = predicted)
-
-#Large amount of overfitting is happening when prediction model is being created
-
-#Lets try random forest
-library(randomForest)
-# x = iitdata_train[,-ncol(iitdata_train)]
-# y = iitdata_train[,ncol(iitdata_train), drop=FALSE]
-?randomForest
-fit4 <- randomForest(SECTOR ~.
-                     , data=iitdata_train )
-                     #importance=TRUE,
-                     # fit 2000 decision trees!
-                     #ntree=2000)
-predictions <- predict(fit4, iitdata_test[,-ncol(iitdata_test)])
-confusionMatrix(reference=Actual, data=predictions)
-
-
-remove(fit4)
-hist(as.numeric(iitdata_complete$SECTOR))
-
-#trying gradient boost
-library(gbm)
-install.packages("gbm")
-iitdata_train$OCCURED <- as.numeric(iitdata_train$OCCURED)
-View(iitdata_train)
-?gbm
-fit <- gbm(SECTOR ~. , data = iitdata_train , distribution = "multinomial")
-predict.gbm <- function (object, newdata, n.trees, type = "link", single.tree = FALSE, ...) {
-  if (missing(n.trees)) {
-    if (object$train.fraction < 1) {
-      n.trees <- gbm.perf(object, method = "test", plot.it = FALSE)
-    }
-    else if (!is.null(object$cv.error)) {
-      n.trees <- gbm.perf(object, method = "cv", plot.it = FALSE)
-    }
-    else {
-      n.trees <- length(object$train.error)
-    }
-    cat(paste("Using", n.trees, "trees...\n"))
-    gbm::predict.gbm(object, newdata, n.trees, type, single.tree, ...)
-  }
-}
-levels(iitdata_complete$SECTOR)
-unique(iitdata_test$SECTOR)
-levels(iitdata_test$SECTOR)
-levels(iitdata_train$SECTOR)
-table(iitdata_complete$SECTOR)
-predictions <- predict(fit,iitdata_test[,-ncol(iitdata_test)], type = "response") 
-                       #n.trees=fit$n.trees)
-
-predictions
-p.prediction <- apply(predictions, 1, function(x) colnames(predictions)[which.max(x)])
-length(predictions)
-length(p.prediction)
-nrow(predictions)
-predictions[1:3,,]
-length(Actual)
-table(p.prediction, Actual)
-confusionMatrix(reference=Actual, data=p.prediction)
