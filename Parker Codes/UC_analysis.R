@@ -3,6 +3,7 @@ library(MASS)
 library(caret)
 library(e1071)
 load("~/Documents/Math 571 project/UC_FINAL_AGG.Rda")
+UC_FINAL_AGG<-na.omit(UC_FINAL_AGG)
 
 createModelFormula <- function(targetVar, xVars, includeIntercept = TRUE){
   if(includeIntercept){
@@ -39,9 +40,43 @@ finalModel<-stepAIC(model, direction = 'forward')
 
 #Naive Bayes
 targetVar<-'SECTOR'
-xVars<-colnames(UC_FINAL_AGG)[c(5:9,11:20)]
+xVars<-c('INCIDENT_TYPE1', 'TYPE_OF_DATA', 'INCIDENT_TYPE2', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
+xVars<-c('TYPE_OF_DATA', 'INCIDENT_TYPE1', 'HUM', 'MONTH', 'WIND')
 #use naive bayes
 modelForm<-createModelFormula(targetVar,xVars)
 naiveBayesModel<-naiveBayes(modelForm, train)
 NB_pred<-predict(naiveBayesModel, test)
 confusionMatrix(NB_pred,test$SECTOR)
+#BEST=.1429
+#No change: COND
+
+#Off campus
+offcamp<-UC_FINAL_AGG[UC_FINAL_AGG$TYPE_OF_DATA=='UC-AREA',]
+trainOff<-offcamp[1:(.8*length(offcamp$X1)),]
+testOff<-offcamp[(.8*length(offcamp$X1)):length(offcamp$X1),]
+targetVar<-'SECTOR'
+xVars<-c('INCIDENT_TYPE1', 'INCIDENT_TYPE2', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
+xVars<-c('INCIDENT_TYPE1', 'HUM', 'MONTH')
+#use naive bayes
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, trainOff)
+NB_pred<-predict(naiveBayesModel, testOff)
+confusionMatrix(NB_pred,testOff$SECTOR)
+#BEST=.1337
+#next:
+#No change: STAND_COND
+
+#On campus
+oncamp<-UC_FINAL_AGG[UC_FINAL_AGG$TYPE_OF_DATA=='UC-CAMPUS',]
+trainOn<-oncamp[1:(.8*length(oncamp$X1)),]
+testOn<-oncamp[(.8*length(oncamp$X1)):length(oncamp$X1),]
+targetVar<-'SECTOR'
+xVars<-c('INCIDENT_TYPE1', 'TYPE_OF_DATA', 'INCIDENT_TYPE2', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
+xVars<-c('INCIDENT_TYPE1', 'HUM', 'MONTH')
+#use naive bayes
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, trainOn)
+NB_pred<-predict(naiveBayesModel, testOn)
+confusionMatrix(NB_pred,testOn$SECTOR)
+#BEST=.3951
+
