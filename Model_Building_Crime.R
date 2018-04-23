@@ -125,6 +125,7 @@ sample <- IIT_FINAL_AGG
 IIT_FINAL_AGG$SECTOR <- as.factor(IIT_FINAL_AGG$SECTOR)
 IIT_FINAL_AGG <- as.data.frame(IIT_FINAL_AGG)
 
+levels(IIT_FINAL_AGG$INCIDENT_TYPE2) <- c("MILD_INCIDENTS", "SERIOUS_INCIDENTS")
 # IIT_FINAL_AGG$SECTOR <- as.factor(IIT_FINAL_AGG$SECTOR)
 # levels(IIT_FINAL_AGG$SECTOR)
 # hist(as.numeric(IIT_FINAL_AGG$SECTOR))
@@ -133,37 +134,90 @@ IIT_FINAL_AGG <- as.data.frame(IIT_FINAL_AGG)
 
 #first let build a model solely for IIT campus
 class(IIT_FINAL_AGG)
+#simple training model - Yet to be tested
+simple_model_testing <- function(data_input,target,xVars ,model_name) {
+  modelForm<-createModelFormula(target,xVars)
+  train<-data_input[1:(.8*length(data_input$Index)),]
+  test<-data_input[(.8*length(data_input$Index)):length(data_input$Index),]
+  fit <- model_name(modelForm, train)
+  pred<-predict(fit, test)
+  print(confusionMatrix(pred,test[,target]))
+  
+}
 
-#split into 80%, 20%
-train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
-test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
+targetVar<-'SECTOR'
+xVars<-colnames(IIT_FINAL_AGG)[c(4,8:9,11:20)]
+simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
+#ACCURACY OF 33.78 AND BALANCED ACCURACY OF 51 PERCENT for entire sector data
 
 
+#Naive Bayes on IIT campus data alone for Sector info
 
-#Naive Bayes
+iitdata <- IIT_FINAL_AGG[IIT_FINAL_AGG$TYPE_OF_DATA == "IIT-CAMPUS",]
+iitdata$SECTOR <- factor(iitdata$SECTOR)
+View(iitdata)
+
+simple_model_testing(iitdata, targetVar, xVars, naiveBayes)
+
+#accuracy of 53.52 and balanced accuracy of 51 percent
+
+#Naive Bayes on Incident Type on entire data
 
 targetVar<-'INCIDENT_TYPE2'
-
 xVars<-colnames(IIT_FINAL_AGG)[c(4,6:8,10:20)]
-levels(test$INCIDENT_TYPE2)
-#use naive bayes
-modelForm<-createModelFormula(targetVar,xVars)
-naiveBayesModel<-naiveBayes(modelForm, train)
-NB_pred<-predict(naiveBayesModel, test)
-NB_pred
-mean(NB_pred == test$GeoHash)
-confusionMatrix(NB_pred,test$INCIDENT_TYPE2)
+
+simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
+#55.21 percent total accuracy, while 95.42 percent total accuracy
+
+accuracy.meas(test$INCIDENT_TYPE2,NB_pred)
+roc.curve(test$INCIDENT_TYPE2,NB_pred, plotit = F)
+#55.2
+
+#Applying naive bayes on incident data for iit campus
+
+simple_model_testing(iitdata, targetVar, xVars, naiveBayes)
+#52 percent accuracy, #52.7percent ROC curve area
 
 accuracy.meas(test$INCIDENT_TYPE2,NB_pred)
 roc.curve(test$INCIDENT_TYPE2,NB_pred, plotit = F)
 
+#Now , lets apply geo hashing with precision 6
 
-#installing sampling packages
+IIT_FINAL_AGG$GeoHash <- apply(IIT_FINAL_AGG,1,
+                                 function(x) 
+                                   return(gh_encode(as.double(x[6]), as.double(x[7]), precision=6)))
+
+
+IIT_FINAL_AGG$GeoHash <- as.factor(IIT_FINAL_AGG$GeoHash)
+levels(IIT_FINAL_AGG$GeoHash)
+targetVar<-'GeoHash'
+
+xVars<-colnames(IIT_FINAL_AGG)[c(4,8:20)]
+
+simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
+#the accuracy levels again went down
+
+#Another variation would be to train individually for each sector, and use those for
+View(sector_1)
+sector_11<- IIT_FINAL_AGG[IIT_FINAL_AGG$SECTOR==11,]
+sector_11$GeoHash <- factor(sector_11$GeoHash)
+levels(sector_11$GeoHash)
+#testing for a sample sector . Some sectors have good accuracy. while others dont
+simple_model_testing(sector_11, targetVar, xVars, naiveBayes)
+#accuracy levels are again bizzare
+
+
+#so i believe we should go with crime classification and related strategies
+
+#installing sampling packages to reduce effects due to imbalanced classes
+
 install.packages("ROSE")
 library(ROSE)
 table(train$INCIDENT_TYPE2)
 nrow(train)
 
+train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
+test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
 #oversampling
 data_balanced_over <- ovun.sample(modelForm, data = train, method = "over",N = 196416)$data
 table(data_balanced_over$INCIDENT_TYPE2)
@@ -212,13 +266,20 @@ roc.curve(test$INCIDENT_TYPE2,pred.nb.under)
 accuracy.meas(test$INCIDENT_TYPE2,pred.nb.both)
 roc.curve(test$INCIDENT_TYPE2,pred.nb.both)
 
-#the balanced accuracy has improved.
+#the balanced accuracy has improved. best ROC area of 64.7 percent
 
 #lets try some more techniques
-
+install.packages("pROC")
+library(pROC)
 ctrl <- trainControl(method = "repeatedcv",
                      number = 10,
                      repeats = 5,
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE)
 
+orig_fit <- train(modelForm,
+                  data = train,
+                  method = "gbm",
+                  verbose = FALSE,
+                  metric = "ROC",
+                  trControl = ctrl)
