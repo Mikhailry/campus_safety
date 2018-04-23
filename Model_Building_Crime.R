@@ -170,7 +170,7 @@ simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
 #55.21 percent total accuracy, while 95.42 percent total accuracy
 
 accuracy.meas(test$INCIDENT_TYPE2,NB_pred)
-roc.curve(test$INCIDENT_TYPE2,NB_pred, plotit = F)
+roc.curve(test$INCIDENT_TYPE2,NB_pred)
 #55.2
 
 #Applying naive bayes on incident data for iit campus
@@ -197,16 +197,40 @@ xVars<-colnames(IIT_FINAL_AGG)[c(4,8:20)]
 simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
 #the accuracy levels again went down
 
+
+#lets try geohashing with IIT area
+iitdata <- IIT_FINAL_AGG[IIT_FINAL_AGG$TYPE_OF_DATA == "IIT-CAMPUS",]
+iitdata$GeoHash <- factor(iitdata$GeoHash)
+levels(iitdata$GeoHash)
+targetVar<-'GeoHash'
+xVars<-colnames(IIT_FINAL_AGG)[c(4,9, 11:20)]
+
+decoded_values = c()
+for (i in levels(iitdata$GeoHash)) {
+  decoded_values <- c(decoded_values, gh_decode(i))
+}
+
+decoded_values <- lapply(levels(iitdata$GeoHash), gh_decode)
+decoded_values
+simple_model_testing(iitdata, targetVar, xVars, naiveBayes)
+#accuracy is not so good again
+
+#lets drop all the kent campus sector values
+filtered_IIT_AGG <- IIT_FINAL_AGG[!(IIT_FINAL_AGG$SECTOR==17 | 
+                                      IIT_FINAL_AGG$SECTOR ==18 |
+                                      IIT_FINAL_AGG$SECTOR == 19 |
+                                      IIT_FINAL_AGG$SECTOR == 20), ]
+
 #Another variation would be to train individually for each sector, and use those for
 View(sector_1)
-sector_11<- IIT_FINAL_AGG[IIT_FINAL_AGG$SECTOR==11,]
-sector_11$GeoHash <- factor(sector_11$GeoHash)
+sector_20<- IIT_FINAL_AGG[IIT_FINAL_AGG$SECTOR==20,]
+sector_20$GeoHash <- factor(sector_20$GeoHash)
 levels(sector_11$GeoHash)
 #testing for a sample sector . Some sectors have good accuracy. while others dont
-simple_model_testing(sector_11, targetVar, xVars, naiveBayes)
+simple_model_testing(sector_20, targetVar, xVars, naiveBayes)
 #accuracy levels are again bizzare
 
-
+prop.table(table(IIT_FINAL_AGG$INCIDENT_TYPE2))
 #so i believe we should go with crime classification and related strategies
 
 #installing sampling packages to reduce effects due to imbalanced classes
@@ -216,6 +240,11 @@ library(ROSE)
 table(train$INCIDENT_TYPE2)
 nrow(train)
 
+targetVar<-'INCIDENT_TYPE2'
+xVars<-colnames(IIT_FINAL_AGG)[c(4,6:8,10:20)]
+modelForm<-createModelFormula(targetVar,xVars)
+
+levels(train$INCIDENT_TYPE2)
 train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
 test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
 #oversampling
@@ -271,15 +300,145 @@ roc.curve(test$INCIDENT_TYPE2,pred.nb.both)
 #lets try some more techniques
 install.packages("pROC")
 library(pROC)
-ctrl <- trainControl(method = "repeatedcv",
-                     number = 10,
-                     repeats = 5,
-                     summaryFunction = twoClassSummary,
-                     classProbs = TRUE)
+# ctrl <- trainControl(method = "repeatedcv",
+#                      number = 10,
+#                      repeats = 5,
+#                      summaryFunction = twoClassSummary,
+#                      classProbs = TRUE)
+# 
+# orig_fit <- train(modelForm,
+#                   data = train,
+#                   method = "gbm",
+#                   verbose = FALSE,
+#                   metric = "ROC",
+#                   trControl = ctrl)
 
-orig_fit <- train(modelForm,
-                  data = train,
-                  method = "gbm",
-                  verbose = FALSE,
-                  metric = "ROC",
-                  trControl = ctrl)
+#Using treebag model in caret to evaluate the incident type
+
+ctrl <- trainControl(method = "cv", number = 5)
+tbmodel <- train(modelForm, data = train, method = "treebag",
+                 trControl = ctrl)
+
+predictors <- names(trainSplit)[names(trainSplit) != 'target']
+pred <- predict(tbmodel$finalModel, testSplit[,predictors])
+
+
+#load iit only
+load("iit_only.rda")
+summary(iit3)
+
+View(iit3)
+
+IIT_FINAL_AGG <- iit3
+
+IIT_FINAL_AGG$OCCURED <- as.POSIXct(IIT_FINAL_AGG$OCCURED)
+IIT_FINAL_AGG <- IIT_FINAL_AGG[order(IIT_FINAL_AGG$OCCURED),]
+
+#Changing index labels 
+IIT_FINAL_AGG$X1 <- c(1:nrow(IIT_FINAL_AGG))
+names(IIT_FINAL_AGG)[1] <- 'Index'
+
+#Ordering is done . Lets change the occured to numeric to be added as predictor variable
+IIT_FINAL_AGG$OCCURED <- as.numeric(IIT_FINAL_AGG$OCCURED)
+#Ordering is done .. now need to convert necessary labels to factor types
+
+
+#First is incident type
+levels(as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)) # 5 levels
+#lets build two classes out of the incidents
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="NON CRIMINAL")] <- "MILD INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PROPERTY CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SUBSTANCE CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PERSON CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SERIOUS CRIME")] <- "SERIOUS INCIDENTS"
+
+IIT_FINAL_AGG$INCIDENT_TYPE2 <- as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)
+#class(IIT_FINAL_AGG$INCIDENT_TYPE2)
+#original_incidents_list <- IIT_FINAL_AGG$INCIDENT_TYPE1
+#Removing the incdient type 1 columns since incident type 2 is there .. will plan to incorporate it
+# while training the model to study the change in accuracy
+
+#Now lets look at the sector data
+
+levels(as.factor(IIT_FINAL_AGG$SECTOR)) #20 labels. This is our target variable
+
+
+#lets check the same for month, day and time buckets
+
+levels(as.factor(IIT_FINAL_AGG$MONTH))
+levels(as.factor(IIT_FINAL_AGG$DAY))
+levels(as.factor(IIT_FINAL_AGG$TIME_BUCKET))
+
+IIT_FINAL_AGG$TYPE_OF_DATA<-as.factor(IIT_FINAL_AGG$TYPE_OF_DATA)
+IIT_FINAL_AGG$MONTH <- as.factor(IIT_FINAL_AGG$MONTH)
+IIT_FINAL_AGG$DAY <- as.factor(IIT_FINAL_AGG$DAY)
+IIT_FINAL_AGG$TIME_BUCKET <- as.factor(IIT_FINAL_AGG$TIME_BUCKET)
+
+#Great .. lets get into weather now
+
+levels(as.factor(IIT_FINAL_AGG$COND))#32 levels
+levels(as.factor(IIT_FINAL_AGG$STAND_COND)) #7 levels
+levels(as.factor(IIT_FINAL_AGG$SEVERITY)) # 3 levels
+
+#we can do the same as we did for incident types . Removing the conditions and keep the standard 
+#conditions as factors
+
+#weather_cond <- IIT_FINAL_AGG$COND 
+#IIT_FINAL_AGG$COND <- NULL
+IIT_FINAL_AGG$COND <- as.factor(IIT_FINAL_AGG$COND)
+IIT_FINAL_AGG$STAND_COND <- as.factor(IIT_FINAL_AGG$STAND_COND)
+IIT_FINAL_AGG$SEVERITY <- as.factor(IIT_FINAL_AGG$SEVERITY)
+
+#cool .. lets look at summary once more
+summary(IIT_FINAL_AGG)
+
+#lets look at percent of Null values before proceeding
+options(scipen = 999)
+Null_Counter <- apply(IIT_FINAL_AGG, 2, function(x) length(which(x == "" | is.na(x) | x == "NA" | x == "999"  | x == "?"))/length(x))
+
+#Ok , there are couple of NA values in the data. Lets start with Occured
+
+sample <- IIT_FINAL_AGG
+
+
+#now lets check summary again
+
+summary(IIT_FINAL_AGG)
+
+# now there are NAs only in stand_cond, severity and wind
+#summary(IIT_FINAL_AGG)
+NA_rows <- IIT_FINAL_AGG[rowSums(is.na(IIT_FINAL_AGG)) > 0 ,]
+View(NA_rows)
+sample <- IIT_FINAL_AGG
+#there are two remaining unknown locations in Locations column. Lets place them as "No Location name'
+IIT_FINAL_AGG[is.na(IIT_FINAL_AGG[,2]), 2] <- "No Location Specified"
+
+#Before moving to model building , let change the SECTOR to factor variables as well
+sample <- IIT_FINAL_AGG
+IIT_FINAL_AGG$SECTOR <- as.factor(IIT_FINAL_AGG$SECTOR)
+IIT_FINAL_AGG <- as.data.frame(IIT_FINAL_AGG)
+
+
+# IIT_FINAL_AGG$SECTOR <- as.factor(IIT_FINAL_AGG$SECTOR)
+# levels(IIT_FINAL_AGG$SECTOR)
+# hist(as.numeric(IIT_FINAL_AGG$SECTOR))
+# table(as.numeric(IIT_FINAL_AGG$SECTOR))
+#Great !! All NA values are dealt with in this case. Now its model building time
+
+prop.table(table(IIT_FINAL_AGG$SECTOR))
+targetVar<-'SECTOR'
+xVars<-colnames(IIT_FINAL_AGG)[c(4,8:19)]
+
+#simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
+
+
+modelForm<-createModelFormula(targetVar,xVars)
+train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
+test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
+fit <- rpart(modelForm, train)
+pred<-predict(fit, test, type="class")
+print(confusionMatrix(pred,test[,targetVar]))
+
+fit <- randomForest(modelForm, data=train)
+pred<-predict(fit, test, type="class")
+print(confusionMatrix(pred,test[,targetVar]))
