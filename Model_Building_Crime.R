@@ -529,7 +529,7 @@ extract_days <- function(date) {
   return(substring(days_val,1,3))
 }
 
-extract_days(as.Date("2018-02-01"))
+#function that creates the crime prediction dataset (Need to add lats and lons to the set)
 crime_prediction_model <- function(start_date, date_range, typeofarea) {
   
   sector_datetime <- c()
@@ -588,14 +588,18 @@ test$'PREDICTED' <- predict(fit, test, type="class")
 confusionMatrix(pred, test$INCIDENT_TYPE2)
 
 
+#for calculating the ration of serious incidents to total incidents
 for (i in 1:8 ) {
   sector_data <- test[test$SECTOR == i,]   
+  print(nrow(sector_data))
   table_val <- table(sector_data[,'PREDICTED'])
   serious_incidents <- table_val[names(table_val) == "SERIOUS_INCIDENTS"]
-  print(paste("percent for sector", i, sep = " "))
+  print(paste(" Serious incident percent for sector", i, sep = " "))
   print((serious_incidents / nrow(sector_data))* 100)
   
 }
 
-prop.table(table(test$INCIDENT_TYPE2))
+sample_data <- IIT_FINAL_AGG[IIT_FINAL_AGG$TYPE_OF_DATA=="IIT-AREA",]
+
+prop.table(table(sample_data$INCIDENT_TYPE2))
 
