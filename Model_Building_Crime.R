@@ -4,6 +4,7 @@ getwd()
 
 load("IIT_FINAL_AGG.Rda")
 
+prop.table(table(IIT_FINAL_AGG$INCIDENT_TYPE2))
 #initial analysis
 nrow(IIT_FINAL_AGG)
 ncol(IIT_FINAL_AGG)
@@ -322,6 +323,9 @@ tbmodel <- train(modelForm, data = train, method = "treebag",
 predictors <- names(trainSplit)[names(trainSplit) != 'target']
 pred <- predict(tbmodel$finalModel, testSplit[,predictors])
 
+#------------------------------------------------------------------------------------------------#
+
+#WE ARE STARTING AGAIN ON IIT-ONLY CURTAILED DATA FOR CAMPUS AND AREA
 
 #load iit only
 load("iit_only.rda")
@@ -330,6 +334,10 @@ summary(iit3)
 View(iit3)
 
 IIT_FINAL_AGG <- iit3
+
+prop.table(table(IIT_FINAL_AGG$INCIDENT_TYPE2))
+prop.table(table(IIT_FINAL_AGG$INCIDENT_TYPE1))
+
 
 IIT_FINAL_AGG$OCCURED <- as.POSIXct(IIT_FINAL_AGG$OCCURED)
 IIT_FINAL_AGG <- IIT_FINAL_AGG[order(IIT_FINAL_AGG$OCCURED),]
@@ -344,14 +352,34 @@ IIT_FINAL_AGG$OCCURED <- as.numeric(IIT_FINAL_AGG$OCCURED)
 
 
 #First is incident type
-levels(as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)) # 5 levels
+levels(as.factor(IIT_FINAL_AGG$INCIDENT_TYPE1)) # 5 levels
 #lets build two classes out of the incidents
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="NON CRIMINAL")] <- "MILD INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PROPERTY CRIME")] <- "SERIOUS INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SUBSTANCE CRIME")] <- "SERIOUS INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PERSON CRIME")] <- "SERIOUS INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SERIOUS CRIME")] <- "SERIOUS INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="ARSON")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="ASSAULT")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="BATTERY")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="HOMICIDE")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="KIDNAPPING")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="MISSING PERSON")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="NARCOTICS")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="OFFENSE INVOLVING CHILDREN")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="ROBBERY")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="SEXUAL CRIME")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="THEFT")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="WEAPON")] <- "SERIOUS_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="ACCIDENT")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="ALARM")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="DAMAGE TO PROPERTY")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="DISTURBANCE")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="LIQUOR LAW VIOLATION")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="MEDICAL INCIDENT")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="OTHER")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="STALKING")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="SUSPICION")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="TRESPASS")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="UTILITY INCIDENT")] <- "MILD_INCIDENTS"
+IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE1=="WELL BEING CHECK")] <- "MILD_INCIDENTS"
 
+prop.table(table(IIT_FINAL_AGG$INCIDENT_TYPE2))
 IIT_FINAL_AGG$INCIDENT_TYPE2 <- as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)
 #class(IIT_FINAL_AGG$INCIDENT_TYPE2)
 #original_incidents_list <- IIT_FINAL_AGG$INCIDENT_TYPE1
@@ -426,8 +454,8 @@ IIT_FINAL_AGG <- as.data.frame(IIT_FINAL_AGG)
 #Great !! All NA values are dealt with in this case. Now its model building time
 
 prop.table(table(IIT_FINAL_AGG$SECTOR))
-targetVar<-'SECTOR'
-xVars<-colnames(IIT_FINAL_AGG)[c(4,8:19)]
+targetVar<-'INCIDENT_TYPE2'
+xVars<-colnames(IIT_FINAL_AGG)[c(4, 8,10:20)]
 
 #simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
 
@@ -435,10 +463,139 @@ xVars<-colnames(IIT_FINAL_AGG)[c(4,8:19)]
 modelForm<-createModelFormula(targetVar,xVars)
 train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
 test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
+
+nrow(train) + nrow(test) == nrow(IIT_FINAL_AGG)
+prop.table(table(train$INCIDENT_TYPE2))
+prop.table(table(test$INCIDENT_TYPE2))
+
+#using naive bayes
+simple_model_testing(IIT_FINAL_AGG,targetVar, xVars, naiveBayes)
+
+
+#using decision trees
 fit <- rpart(modelForm, train)
+summary(fit)
+fancyRpartPlot(fit)
 pred<-predict(fit, test, type="class")
 print(confusionMatrix(pred,test[,targetVar]))
 
-fit <- randomForest(modelForm, data=train)
+
+#using random forests
+fit <- randomForest(modelForm, data=train )
 pred<-predict(fit, test, type="class")
 print(confusionMatrix(pred,test[,targetVar]))
+
+
+#lets add the geohash values to encode the lat and lons for adding to the model and see accuracy
+IIT_FINAL_AGG$GeoHash <- apply(IIT_FINAL_AGG,1,
+                               function(x) 
+                                 return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
+table(IIT_FINAL_AGG$GeoHash)
+targetVar<-'INCIDENT_TYPE2'
+xVars<-colnames(IIT_FINAL_AGG)[c(4, 8,10:21)]
+
+#simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
+simple_model_testing(IIT_FINAL_AGG,targetVar, xVars, naiveBayes)
+
+modelForm<-createModelFormula(targetVar,xVars)
+
+#using decision trees
+fit <- rpart(modelForm, train)
+summary(fit)
+fancyRpartPlot(fit)
+pred<-predict(fit, test, type="class")
+print(confusionMatrix(pred,test[,targetVar]))
+
+gh_decode("dp3wn0d")
+iit_data_sample <- IIT_FINAL_AGG[IIT_FINAL_AGG$SECTOR==1,]
+table(iit_data_sample$GeoHash)
+#function that extracts month from the date and converts to the factor required
+
+val <- 'january'
+substring(val,1,3)
+levels(IIT_FINAL_AGG$TIME_BUCKET)
+library(lubridate)
+
+extract_month <- function(date) {
+  month_val <- months(date)
+  #print(month_val)
+  return(substring(month_val,1,3))
+}
+
+levels(IIT_FINAL_AGG$DAY)
+extract_days <- function(date) {
+  days_val <- weekdays(date)
+  #print(month_val)
+  return(substring(days_val,1,3))
+}
+
+extract_days(as.Date("2018-02-01"))
+crime_prediction_model <- function(start_date, date_range, typeofarea) {
+  
+  sector_datetime <- c()
+  sector_range <- c()
+  sector_timebucket <- c()
+  sector_month <- c()
+  sector_day <- c()
+  sector_typeofarea <- c()
+  for (z in typeofarea) {
+    for (i in 1:date_range) {
+      if (i == 1) 
+        date_value <- as.Date(start_date)
+      else
+        date_value <- as.Date(date_value) + days(1)
+      month_val <- extract_month(date_value)
+      day_val <- extract_days(date_value)
+      sector_month <- c(sector_month, rep(month_val, 64) )
+      sector_day<- c(sector_day, rep(day_val, 64) )
+      sector_range <- c(sector_range,unlist(lapply(1:8, function(x) rep(x,8))))
+      sector_timebucket <- c(sector_timebucket,rep(levels(IIT_FINAL_AGG$TIME_BUCKET), 8))
+      sector_typeofarea <- c(sector_typeofarea, rep(z, 64))
+      
+      start <- as.POSIXct(paste(date_value, "01:30:00", sep = " "))
+      #print(start)
+      interval <- 60
+      end <- start + as.difftime(0.95, units="days")
+      sector_datetime<- c(sector_datetime, rep(seq(from=start, by=interval*180, to=end),8))
+      #print(sector_datetime)
+      #print(length(sector_datetime))
+      
+    }
+    
+  }
+  
+  test_dataset <- data.frame(sector_datetime,sector_timebucket,sector_month, sector_day, sector_typeofarea, sector_range)
+  test_dataset[,3] <- ordered(test_dataset[,3])
+  test_dataset[,4] <- ordered(test_dataset[,4])
+  names(test_dataset) <- c("OCCURED", "TIME_BUCKET","MONTH", "DAY",  "TYPE_OF_DATA", "SECTOR")
+  return(test_dataset)  
+}
+
+remove(test_dataset)
+test_dataset <- crime_prediction_model("2018-01-01", 5, c("IIT-AREA", "IIT-CAMPUS"))
+summary(test_dataset)
+View(test_dataset)
+
+for (i in 1:ncol(IIT_FINAL_AGG)) {
+  print(class(IIT_FINAL_AGG[,i]))
+}
+targetVar<-'INCIDENT_TYPE2'
+xVars<-colnames(IIT_FINAL_AGG)[c(4,6:7, 10:20)]
+modelForm<-createModelFormula(targetVar,xVars)
+fit <- rpart(modelForm, train)
+summary(fit)
+test$'PREDICTED' <- predict(fit, test, type="class")
+confusionMatrix(pred, test$INCIDENT_TYPE2)
+
+
+for (i in 1:8 ) {
+  sector_data <- test[test$SECTOR == i,]   
+  table_val <- table(sector_data[,'PREDICTED'])
+  serious_incidents <- table_val[names(table_val) == "SERIOUS_INCIDENTS"]
+  print(paste("percent for sector", i, sep = " "))
+  print((serious_incidents / nrow(sector_data))* 100)
+  
+}
+
+prop.table(table(test$INCIDENT_TYPE2))
+
