@@ -72,7 +72,7 @@ end<-Sys.time()
 
 #Spots where precip is NA shoul dbe 0.00
 IIT_FINAL_AGG$PRECIP[is.na(IIT_FINAL_AGG$PRECIP)]<-0.00
-UC_FINAL_AGG$PRECIP[is.na(UC_FINAL_AGG$PRECIP)]<-0.00
+UC_FINAL_AGG$PRECIP[is.na(IIT_FINAL_AGG$PRECIP)]<-0.00
 
 #missed a couple of weather descriptions
 for (i in 1:length(IIT_FINAL_AGG$OCCURED)){
