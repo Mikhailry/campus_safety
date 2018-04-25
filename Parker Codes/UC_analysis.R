@@ -125,7 +125,8 @@ endmodel<-glm(createModelFormula(targetVar, allVars), family = binomial(link = '
 finalModel<-stepAIC(model,direction = 'both', scope = list(upper=endmodel,lower=startmodel))
 #From step selection, we get the variables TYPE_OF_DATA, SECTOR, TIME_BUCKET, LONGITUDE, LATITUDE and MONTH
 xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','DAY', 'LATITUDE', 'STAND_COND', 'HUM', 'TEMP', 'LONGITUDE')
-finalModel<-glm(createModelFormula(targetVar, xVars), family = binomial(link = 'logit'), data=train)
+modelForm<-createModelFormula(targetVar, xVars)
+finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train)
 fitted.results <- predict(finalModel
                           ,newdata = test[,xVars]
                           # Specifying response means we want the probabilities
@@ -165,3 +166,45 @@ auc <- performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
 auc
 
+#ROSE
+targetVar<-'INCIDENT_TYPE2'
+xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','DAY', 'LATITUDE', 'STAND_COND', 'HUM', 'TEMP', 'LONGITUDE')
+modelForm<-createModelFormula(targetVar,xVars)
+library(ROSE)
+test2<-ROSE(modelForm, train, seed=1)
+finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train)
+fitted.results <- predict(finalModel
+                          ,newdata = test2$data[,xVars]
+                          # Specifying response means we want the probabilities
+                          ,type='response')
+
+hist(fitted.results)
+
+
+
+# We output the probabilities, but we want to turn the probabilities into
+# a classification of survived or not. .5 is a reasonable starting cutoff.
+# We will be revisiting this in lecture 11 heavily
+survived.pred <- ifelse(fitted.results > 0.92,1,0)
+
+survived.pred<-as.factor(as.integer(survived.pred))
+levels(survived.pred)<-c('MILD INCIDENTS', 'SERIOUS INCIDENTS')
+
+# Let's use a confusion matrix to evaluate how good our results are
+confusion <- confusionMatrix(data = survived.pred
+                             , reference = test2$data$INCIDENT_TYPE2
+                             , dnn = c("Predicted Surival", 'Actual Survival')
+)
+confusion
+
+#naive Bayes for serious or mild
+targetVar<-'INCIDENT_TYPE2'
+xVars<-c('SECTOR','LONGITUDE','LATITUDE','TYPE_OF_DATA', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
+xVars<-c('SECTOR', 'MONTH', 'STAND_COND')
+#use naive bayes
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, train)
+NB_pred<-predict(naiveBayesModel, test2$data$INCIDENT_TYPE2)
+confusionMatrix(NB_pred,test2$data$INCIDENT_TYPE2)
+#.4983
+#next:
