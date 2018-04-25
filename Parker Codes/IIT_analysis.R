@@ -104,6 +104,8 @@ iit3$COND<-as.factor(iit3$COND)
 iit3$STAND_COND<-as.factor(iit3$STAND_COND)
 iit3$SEVERITY<-as.factor(iit3$SEVERITY)
 iit3$SECTOR<-factor(iit3$SECTOR)
+iit3$DAY<-factor(iit3$MONTH, ordered = FALSE)
+iit3$MONTH<-factor(iit3$MONTH, ordered = FALSE)
 
 
 #sort on time occured
@@ -130,6 +132,7 @@ endmodel<-glm(createModelFormula(targetVar, allVars), family = binomial(link = '
 finalModel<-stepAIC(model,direction = 'both', scope = list(upper=endmodel,lower=startmodel))
 #From step selection, we get the variables TYPE_OF_DATA, SECTOR, TIME_BUCKET, LONGITUDE, LATITUDE and MONTH
 xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE')
+modelForm<-createModelFormula(targetVar,xVars)
 fitted.results <- predict(finalModel
                           ,newdata = test[,xVars]
                           # Specifying response means we want the probabilities
@@ -169,3 +172,68 @@ auc <- performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
 auc
 
+library(geohash)
+iit3$GeoHash <- apply(iit3,1,
+                               function(x) 
+                                 return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
+#ROSE
+iit3$GeoHash<-factor(iit3$GeoHash)
+library(ROSE)
+targetVar<-'INCIDENT_TYPE2'
+xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
+modelForm<-createModelFormula(targetVar,xVars)
+data.rose<-ROSE(modelForm, iit3, seed=1)$data
+
+set.seed(34543)
+inTrain <- createDataPartition(y = data.rose[,targetVar], list = FALSE, p = .8)
+train2 <- data.rose[inTrain,]
+test2 <- data.rose[-inTrain,]
+stopifnot(nrow(train) + nrow(test) == nrow(data.rose))
+
+#xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
+xVars<-c('TIME_BUCKET', 'MONTH','GeoHash')
+modelForm<-createModelFormula(targetVar,xVars)
+finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train2)
+fitted.results <- predict(finalModel
+                          ,newdata = test2[,xVars]
+                          # Specifying response means we want the probabilities
+                          ,type='response')
+
+hist(fitted.results)
+
+
+
+# We output the probabilities, but we want to turn the probabilities into
+# a classification of survived or not. .5 is a reasonable starting cutoff.
+# We will be revisiting this in lecture 11 heavily
+survived.pred <- ifelse(fitted.results > 0.50,1,0)
+
+survived.pred<-as.factor(as.integer(survived.pred))
+levels(survived.pred)<-c('SERIOUS INCIDENTS', 'MILD INCIDENTS')
+
+# Let's use a confusion matrix to evaluate how good our results are
+confusion <- confusionMatrix(data = survived.pred
+                             , reference = test2$INCIDENT_TYPE2
+                             , dnn = c("Predicted Surival", 'Actual Survival')
+)
+confusion
+#.7869
+survived.pred <- ifelse(fitted.results > 0.70,1,0)
+
+survived.pred<-as.factor(as.integer(survived.pred))
+levels(survived.pred)<-c('SERIOUS INCIDENTS', 'MILD INCIDENTS')
+
+# Let's use a confusion matrix to evaluate how good our results are
+confusion <- confusionMatrix(data = survived.pred
+                             , reference = test2$INCIDENT_TYPE2
+                             , dnn = c("Predicted Surival", 'Actual Survival')
+)
+confusion
+
+#Naive Bayes with ROSE
+targetVar<-'INCIDENT_TYPE2'
+xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE')
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, train2)
+NB_pred<-predict(naiveBayesModel, test2)
+confusionMatrix(NB_pred,test2$INCIDENT_TYPE2)
