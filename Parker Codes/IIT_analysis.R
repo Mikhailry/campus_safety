@@ -104,7 +104,7 @@ iit3$COND<-as.factor(iit3$COND)
 iit3$STAND_COND<-as.factor(iit3$STAND_COND)
 iit3$SEVERITY<-as.factor(iit3$SEVERITY)
 iit3$SECTOR<-factor(iit3$SECTOR)
-iit3$DAY<-factor(iit3$MONTH, ordered = FALSE)
+iit3$DAY<-factor(iit3$DAY, ordered = FALSE)
 iit3$MONTH<-factor(iit3$MONTH, ordered = FALSE)
 
 
@@ -176,11 +176,12 @@ library(geohash)
 iit3$GeoHash <- apply(iit3,1,
                                function(x) 
                                  return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
+iit3$OCCURED<-as.numeric(iit3$OCCURED)
 #ROSE
 iit3$GeoHash<-factor(iit3$GeoHash)
 library(ROSE)
 targetVar<-'INCIDENT_TYPE2'
-xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
+xVars<-c('TIME_BUCKET', 'OCCURED', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
 modelForm<-createModelFormula(targetVar,xVars)
 data.rose<-ROSE(modelForm, iit3, seed=1)$data
 
@@ -191,7 +192,7 @@ test2 <- data.rose[-inTrain,]
 stopifnot(nrow(train) + nrow(test) == nrow(data.rose))
 
 #xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
-xVars<-c('TIME_BUCKET', 'MONTH','GeoHash')
+xVars<-c('TIME_BUCKET', 'MONTH','GeoHash', 'DAY')
 modelForm<-createModelFormula(targetVar,xVars)
 finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train2)
 fitted.results <- predict(finalModel
@@ -217,7 +218,7 @@ confusion <- confusionMatrix(data = survived.pred
                              , dnn = c("Predicted Surival", 'Actual Survival')
 )
 confusion
-#.7869
+#.789
 survived.pred <- ifelse(fitted.results > 0.70,1,0)
 
 survived.pred<-as.factor(as.integer(survived.pred))
@@ -232,8 +233,9 @@ confusion
 
 #Naive Bayes with ROSE
 targetVar<-'INCIDENT_TYPE2'
-xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE')
+xVars<-c('TIME_BUCKET', 'MONTH')
 modelForm<-createModelFormula(targetVar,xVars)
 naiveBayesModel<-naiveBayes(modelForm, train2)
 NB_pred<-predict(naiveBayesModel, test2)
 confusionMatrix(NB_pred,test2$INCIDENT_TYPE2)
+
