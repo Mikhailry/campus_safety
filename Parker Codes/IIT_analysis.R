@@ -177,9 +177,10 @@ iit3$GeoHash <- apply(iit3,1,
                                function(x) 
                                  return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
 #ROSE
+iit3$GeoHash<-factor(iit3$GeoHash)
 library(ROSE)
 targetVar<-'INCIDENT_TYPE2'
-xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'Geohash')
+xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
 modelForm<-createModelFormula(targetVar,xVars)
 data.rose<-ROSE(modelForm, iit3, seed=1)$data
 
@@ -189,8 +190,8 @@ train2 <- data.rose[inTrain,]
 test2 <- data.rose[-inTrain,]
 stopifnot(nrow(train) + nrow(test) == nrow(data.rose))
 
-#xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE')
-xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','GeoHash')
+#xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
+xVars<-c('TIME_BUCKET', 'MONTH','GeoHash')
 modelForm<-createModelFormula(targetVar,xVars)
 finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train2)
 fitted.results <- predict(finalModel
@@ -216,7 +217,7 @@ confusion <- confusionMatrix(data = survived.pred
                              , dnn = c("Predicted Surival", 'Actual Survival')
 )
 confusion
-
+#.7869
 survived.pred <- ifelse(fitted.results > 0.70,1,0)
 
 survived.pred<-as.factor(as.integer(survived.pred))
