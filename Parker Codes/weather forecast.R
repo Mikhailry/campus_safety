@@ -1,3 +1,6 @@
+library(devtools)
+devtools::install_github('ALShum/rwunderground')
+library(rwunderground)
 rwunderground::set_api_key('651e75c69a9131c3')
 key=get_api_key()
 location=set_location(territory = 'Illinois', city = 'Chicago')
@@ -169,6 +172,10 @@ addCondition <- function(forecast){
     }
     else if (grepl('Chance',node) & grepl('Snow',node)){
       forecast$condition[i]<-('Rain')
+      forecast$severity[i]<-('NA')
+    }
+    else if (grepl('Chance',node) & grepl('Thunderstorm',node)){
+      forecast$condition[i]<-('Thunderstorm')
       forecast$severity[i]<-('NA')
     }
   }
