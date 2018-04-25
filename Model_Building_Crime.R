@@ -388,7 +388,7 @@ IIT_FINAL_AGG$INCIDENT_TYPE2 <- as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)
 
 #Now lets look at the sector data
 
-levels(as.factor(IIT_FINAL_AGG$SECTOR)) #20 labels. This is our target variable
+levels(as.factor(IIT_FINAL_AGG$SECTOR)) 
 
 
 #lets check the same for month, day and time buckets
@@ -455,7 +455,7 @@ IIT_FINAL_AGG <- as.data.frame(IIT_FINAL_AGG)
 
 prop.table(table(IIT_FINAL_AGG$SECTOR))
 targetVar<-'INCIDENT_TYPE2'
-xVars<-colnames(IIT_FINAL_AGG)[c(4, 8,10:20)]
+xVars<-colnames(IIT_FINAL_AGG)[c(4,10:19,21)]
 
 #simple_model_testing(IIT_FINAL_AGG, targetVar, xVars, naiveBayes)
 
@@ -464,6 +464,7 @@ modelForm<-createModelFormula(targetVar,xVars)
 train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$Index)),]
 test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$Index)):length(IIT_FINAL_AGG$Index),]
 
+View(test)
 nrow(train) + nrow(test) == nrow(IIT_FINAL_AGG)
 prop.table(table(train$INCIDENT_TYPE2))
 prop.table(table(test$INCIDENT_TYPE2))
@@ -491,6 +492,8 @@ IIT_FINAL_AGG$GeoHash <- apply(IIT_FINAL_AGG,1,
                                function(x) 
                                  return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
 table(IIT_FINAL_AGG$GeoHash)
+length(levels(as.factor(IIT_FINAL_AGG$GeoHash)))
+IIT_FINAL_AGG$GeoHash <- as.factor(IIT_FINAL_AGG$GeoHash)
 targetVar<-'INCIDENT_TYPE2'
 xVars<-colnames(IIT_FINAL_AGG)[c(4, 8,10:21)]
 
@@ -584,8 +587,8 @@ xVars<-colnames(IIT_FINAL_AGG)[c(4,6:7, 10:20)]
 modelForm<-createModelFormula(targetVar,xVars)
 fit <- rpart(modelForm, train)
 summary(fit)
-test$'PREDICTED' <- predict(fit, test, type="class")
-confusionMatrix(pred, test$INCIDENT_TYPE2)
+test$PREDICTED <- predict(fit, test, type="class")
+confusionMatrix(test$PREDICTED, test$INCIDENT_TYPE2)
 
 
 #for calculating the ration of serious incidents to total incidents
