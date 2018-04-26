@@ -271,6 +271,7 @@ write.csv(uchicago_data, file = "Uchicago_campus_crimes_cleaned.csv", fileEncodi
 
 
 uchicago_data <- read.csv("UC_stand.csv")
+typeof(uchicago_data)
 head(uchicago_data)
 length(unique(uchicago_data$Location.Address)) #1560 unique addresses
 attach(uchicago_data)
