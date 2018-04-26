@@ -235,13 +235,14 @@ confusion
 load("~/Documents/Math 571 project/future_test.rda")
 xVars<-c('TIME_BUCKET', 'MONTH','GEOHASH', 'DAY')
 colnames(future_test)<-c('OCCURED', 'TIME_BUCKET', 'MONTH', 'DAY', 'GeoHash', 'LATITUDE', 'LONGITUDE')
-
+future_test<-future_test[!as.character(future_test$GeoHash)=='dp3tvz5',]
+future_test<-future_test[!as.character(future_test$GeoHash)=='dp3wjbv',]
 fitted.results <- predict(finalModel
                           ,newdata = future_test
                           # Specifying response means we want the probabilities
                           ,type='response')
 
-hist(fitted.results)
+future_test$PROB<-abs(1-fitted.results)
 
 
 
