@@ -243,7 +243,7 @@ fitted.results <- predict(finalModel
                           ,type='response')
 
 future_test$PROB<-abs(1-fitted.results)
-
+save(finalModel, file = 'LogModel.rda')
 
 
 #Naive Bayes with ROSE
