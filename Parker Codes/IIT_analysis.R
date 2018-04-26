@@ -112,6 +112,8 @@ iit3$GeoHash <- apply(iit3,1,
                         return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
 iit3$OCCURED<-as.numeric(iit3$OCCURED)
 iit3$GeoHash<-factor(iit3$GeoHash)
+iit3<-iit3[!as.character(iit3$GeoHash)=='dp3tvz5',]
+iit3<-iit3[!as.character(iit3$GeoHash)=='dp3wjbv',]
 
 #sort on time occured
 attach(iit3)
@@ -138,6 +140,7 @@ finalModel<-stepAIC(model,direction = 'both', scope = list(upper=endmodel,lower=
 #From step selection, we get the variables TYPE_OF_DATA, SECTOR, TIME_BUCKET, LONGITUDE, LATITUDE and MONTH
 xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE')
 modelForm<-createModelFormula(targetVar,xVars)
+finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train)
 fitted.results <- predict(finalModel
                           ,newdata = test[,xVars]
                           # Specifying response means we want the probabilities
@@ -184,11 +187,18 @@ xVars<-c('TIME_BUCKET', 'OCCURED', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERIT
 modelForm<-createModelFormula(targetVar,xVars)
 data.rose<-ROSE(modelForm, iit3, seed=1)$data
 
-set.seed(34543)
-inTrain <- createDataPartition(y = data.rose[,targetVar], list = FALSE, p = .8)
-train2 <- data.rose[inTrain,]
-test2 <- data.rose[-inTrain,]
-stopifnot(nrow(train) + nrow(test) == nrow(data.rose))
+attach(data.rose)
+data.rose<-data.rose[order(OCCURED),]
+detach(data.rose)
+
+train2<-data.rose[1:(.8*length(iit3$OCCURED)),]
+test2<-data.rose[(.8*length(iit3$OCCURED)):length(iit3$OCCURED),]
+
+#set.seed(34543)
+#inTrain <- createDataPartition(y = data.rose[,targetVar], list = FALSE, p = .8)
+#train2 <- data.rose[inTrain,]
+#test2 <- data.rose[-inTrain,]
+#stopifnot(nrow(train) + nrow(test) == nrow(data.rose))
 
 #xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
 xVars<-c('TIME_BUCKET', 'MONTH','GeoHash', 'DAY')
@@ -224,12 +234,12 @@ fitted.results <- predict(finalModel
                           ,newdata = test[,xVars]
                           # Specifying response means we want the probabilities
                           ,type='response')
-
+fitted.results<-abs(1-fitted.results)
 hist(fitted.results)
 survived.pred <- ifelse(fitted.results > 0.5,1,0)
 
 survived.pred<-as.factor(as.integer(survived.pred))
-levels(survived.pred)<-c('SERIOUS INCIDENTS', 'MILD INCIDENTS')
+levels(survived.pred)<-c('MILD INCIDENTS', 'SERIOUS INCIDENTS')
 
 # Let's use a confusion matrix to evaluate how good our results are
 confusion <- confusionMatrix(data = survived.pred
@@ -237,6 +247,14 @@ confusion <- confusionMatrix(data = survived.pred
                              , dnn = c("Predicted Incidents", 'Actual Incidents')
 )
 confusion
+
+pr <- prediction(fitted.results, test$INCIDENT_TYPE2)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
 
 #Future test
 load("~/Documents/Math 571 project/future_test.rda")
