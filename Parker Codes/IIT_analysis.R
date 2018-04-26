@@ -231,20 +231,6 @@ confusion <- confusionMatrix(data = survived.pred
 )
 confusion
 
-#Future test
-load("~/Documents/Math 571 project/future_test.rda")
-xVars<-c('TIME_BUCKET', 'MONTH','GEOHASH', 'DAY')
-colnames(future_test)<-c('OCCURED', 'TIME_BUCKET', 'MONTH', 'DAY', 'GeoHash', 'LATITUDE', 'LONGITUDE')
-
-fitted.results <- predict(finalModel
-                          ,newdata = future_test
-                          # Specifying response means we want the probabilities
-                          ,type='response')
-
-hist(fitted.results)
-
-
-
 #Naive Bayes with ROSE
 targetVar<-'INCIDENT_TYPE2'
 xVars<-c('TIME_BUCKET', 'MONTH')
