@@ -106,7 +106,12 @@ iit3$SEVERITY<-as.factor(iit3$SEVERITY)
 iit3$SECTOR<-factor(iit3$SECTOR)
 iit3$DAY<-factor(iit3$DAY, ordered = FALSE)
 iit3$MONTH<-factor(iit3$MONTH, ordered = FALSE)
-
+library(geohash)
+iit3$GeoHash <- apply(iit3,1,
+                      function(x) 
+                        return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
+iit3$OCCURED<-as.numeric(iit3$OCCURED)
+iit3$GeoHash<-factor(iit3$GeoHash)
 
 #sort on time occured
 attach(iit3)
@@ -157,7 +162,7 @@ levels(survived.pred)<-c('MILD INCIDENTS', 'SERIOUS INCIDENTS')
 # Let's use a confusion matrix to evaluate how good our results are
 confusion <- confusionMatrix(data = survived.pred
                              , reference = test$INCIDENT_TYPE2
-                             , dnn = c("Predicted Surival", 'Actual Survival')
+                             , dnn = c("Predicted Incidents", 'Actual Incidents')
 )
 confusion
 #88.3%
@@ -172,13 +177,7 @@ auc <- performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
 auc
 
-library(geohash)
-iit3$GeoHash <- apply(iit3,1,
-                      function(x) 
-                        return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
-iit3$OCCURED<-as.numeric(iit3$OCCURED)
 #ROSE
-iit3$GeoHash<-factor(iit3$GeoHash)
 library(ROSE)
 targetVar<-'INCIDENT_TYPE2'
 xVars<-c('TIME_BUCKET', 'OCCURED', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
@@ -215,19 +214,27 @@ levels(survived.pred)<-c('SERIOUS INCIDENTS', 'MILD INCIDENTS')
 # Let's use a confusion matrix to evaluate how good our results are
 confusion <- confusionMatrix(data = survived.pred
                              , reference = test2$INCIDENT_TYPE2
-                             , dnn = c("Predicted Surival", 'Actual Survival')
+                             , dnn = c("Predicted Incidents", 'Actual Incidents')
 )
 confusion
-#.789
-survived.pred <- ifelse(fitted.results > 0.70,1,0)
+#.789 for the rose test data
+
+#TEST original test data
+fitted.results <- predict(finalModel
+                          ,newdata = test[,xVars]
+                          # Specifying response means we want the probabilities
+                          ,type='response')
+
+hist(fitted.results)
+survived.pred <- ifelse(fitted.results > 0.5,1,0)
 
 survived.pred<-as.factor(as.integer(survived.pred))
 levels(survived.pred)<-c('SERIOUS INCIDENTS', 'MILD INCIDENTS')
 
 # Let's use a confusion matrix to evaluate how good our results are
 confusion <- confusionMatrix(data = survived.pred
-                             , reference = test2$INCIDENT_TYPE2
-                             , dnn = c("Predicted Surival", 'Actual Survival')
+                             , reference = test$INCIDENT_TYPE2
+                             , dnn = c("Predicted Incidents", 'Actual Incidents')
 )
 confusion
 
