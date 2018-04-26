@@ -13,7 +13,7 @@ View(IIT_FINAL_AGG)
 
 #the data is currently not ordered chronologically. first lets order it based on occured date and time
 install.packages("chron")
-
+?gh_encode
 library(chron)
 ?as.POSIXct()
 
@@ -185,8 +185,8 @@ roc.curve(test$INCIDENT_TYPE2,NB_pred, plotit = F)
 #Now , lets apply geo hashing with precision 6
 
 IIT_FINAL_AGG$GeoHash <- apply(IIT_FINAL_AGG,1,
-                                 function(x) 
-                                   return(gh_encode(as.double(x[6]), as.double(x[7]), precision=6)))
+                               function(x) 
+                                 return(gh_encode(as.double(x[6]), as.double(x[7]), precision=6)))
 
 
 IIT_FINAL_AGG$GeoHash <- as.factor(IIT_FINAL_AGG$GeoHash)
@@ -483,7 +483,8 @@ print(confusionMatrix(pred,test[,targetVar]))
 
 #using random forests
 fit <- randomForest(modelForm, data=train )
-pred<-predict(fit, test, type="class")
+pred<-predict(fit, test)
+head(pred)
 print(confusionMatrix(pred,test[,targetVar]))
 
 
@@ -532,8 +533,9 @@ extract_days <- function(date) {
   return(substring(days_val,1,3))
 }
 
+
 #function that creates the crime prediction dataset (Need to add lats and lons to the set)
-crime_prediction_model <- function(start_date, date_range, typeofarea) {
+crime_prediction_model <- function(date_range) {
   
   sector_datetime <- c()
   sector_range <- c()
@@ -541,46 +543,53 @@ crime_prediction_model <- function(start_date, date_range, typeofarea) {
   sector_month <- c()
   sector_day <- c()
   sector_typeofarea <- c()
-  for (z in typeofarea) {
-    for (i in 1:date_range) {
-      if (i == 1) 
-        date_value <- as.Date(start_date)
-      else
-        date_value <- as.Date(date_value) + days(1)
-      month_val <- extract_month(date_value)
-      day_val <- extract_days(date_value)
-      sector_month <- c(sector_month, rep(month_val, 64) )
-      sector_day<- c(sector_day, rep(day_val, 64) )
-      sector_range <- c(sector_range,unlist(lapply(1:8, function(x) rep(x,8))))
-      sector_timebucket <- c(sector_timebucket,rep(levels(IIT_FINAL_AGG$TIME_BUCKET), 8))
-      sector_typeofarea <- c(sector_typeofarea, rep(z, 64))
-      
-      start <- as.POSIXct(paste(date_value, "01:30:00", sep = " "))
-      #print(start)
-      interval <- 60
-      end <- start + as.difftime(0.95, units="days")
-      sector_datetime<- c(sector_datetime, rep(seq(from=start, by=interval*180, to=end),8))
-      #print(sector_datetime)
-      #print(length(sector_datetime))
-      
-    }
+  sector_geohash <- c()
+  
+  for (i in 1:date_range) {
+    if (i == 1) 
+      date_value <- Sys.Date() + days(1)
+    else
+      date_value <- as.Date(date_value) + days(1)
+    #print("yes")
+    month_val <- extract_month(date_value)
+    day_val <- extract_days(date_value)
+    sector_geohash <- c(sector_geohash, unlist(lapply(levels(IIT_FINAL_AGG$GeoHash), function(x) rep(x,8))))
+    sector_month <- c(sector_month, rep(month_val, length(sector_geohash)) )
+    sector_day<- c(sector_day, rep(day_val, length(sector_geohash)) )
+    #sector_range <- c(sector_range,unlist(lapply(1:8, function(x) rep(x,8))))
+    sector_timebucket <- c(sector_timebucket,rep(levels(IIT_FINAL_AGG$TIME_BUCKET), 132))
+    #sector_typeofarea <- c(sector_typeofarea, rep(z, 64))
+    
+    start <- as.POSIXct(paste(date_value, "01:30:00", sep = " "))
+    #print(start)
+    interval <- 60
+    end <- start + as.difftime(0.95, units="days")
+    sector_datetime<- c(sector_datetime, rep(seq(from=start, by=interval*180, to=end),132))
+    #print(sector_datetime)
+    #print(length(sector_datetime))
     
   }
   
-  test_dataset <- data.frame(sector_datetime,sector_timebucket,sector_month, sector_day, sector_typeofarea, sector_range)
+  
+  
+  test_dataset <- data.frame(as.numeric(sector_datetime),as.factor(sector_timebucket),as.factor(sector_month), as.factor(sector_day), as.factor(sector_geohash))
   test_dataset[,3] <- ordered(test_dataset[,3])
   test_dataset[,4] <- ordered(test_dataset[,4])
-  names(test_dataset) <- c("OCCURED", "TIME_BUCKET","MONTH", "DAY",  "TYPE_OF_DATA", "SECTOR")
+  names(test_dataset) <- c("OCCURED", "TIME_BUCKET","MONTH", "DAY",  "GEOHASH")
+  test_dataset[,'LATITUDE'] <- apply(test_dataset, 1, function(x) return(as.numeric(gh_decode(x[5])$lat)))
+  test_dataset[,'LONGITUDE'] <- apply(test_dataset,1,  function(x) return(as.numeric(gh_decode(x[5])$lng)))
+  
   return(test_dataset)  
 }
 
 remove(test_dataset)
-test_dataset <- crime_prediction_model("2018-01-01", 5, c("IIT-AREA", "IIT-CAMPUS"))
-summary(test_dataset)
-View(test_dataset)
-
-for (i in 1:ncol(IIT_FINAL_AGG)) {
-  print(class(IIT_FINAL_AGG[,i]))
+future_test <- crime_prediction_model(1)
+summary(future_test)
+View(future_test)
+apply(future_test, 2, class)
+save(future_test, file="future_test.rda")
+for (i in 1:ncol(future_test)) {
+  print(class(future_test[,i]))
 }
 targetVar<-'INCIDENT_TYPE2'
 xVars<-colnames(IIT_FINAL_AGG)[c(4,6:7, 10:20)]
