@@ -264,7 +264,7 @@ crimeTime$Frequency[which(crimeTime$Crime_type=='SERIOUS INCIDENTS')] <- rescale
 
 #plotting incident types frequency in respect to time interval 
 ggplot(crimeTime, aes(x=Crime_type, y=Time_interval)) +
-  geom_tile(aes(fill=crimeTime$Frequency)) + scale_x_discrete("Type of crime", expand = c(0,0)) +
+  geom_tile(aes(fill=crimeTime$Frequency)) + scale_x_discrete("Type of Incident", expand = c(0,0)) +
   scale_y_discrete("Time interval", expand = c(0,-2)) +
   scale_fill_gradient("Crime frequency", low = "white", high = "tomato1", guide = 'none') +
   theme_bw() + ggtitle("Frequency of Incident type by Time intervals") +
@@ -288,7 +288,7 @@ crimeTime$Frequency[which(crimeTime$Crime_type=='SERIOUS INCIDENTS')] <- rescale
 
 #plotting incident types frequency in respect to time interval 
 ggplot(crimeTime, aes(x=Crime_type, y=Day)) +
-  geom_tile(aes(fill=crimeTime$Frequency)) + scale_x_discrete("Crime type", expand = c(0,0)) +
+  geom_tile(aes(fill=crimeTime$Frequency)) + scale_x_discrete("Type of Incident", expand = c(0,0)) +
   scale_y_discrete("Day", expand = c(0,-2)) +
   scale_fill_gradient("Crime frequency", low = "white", high = "tomato", guide = 'none') +
   theme_bw() + ggtitle("Frequency of Incident type by Day of the Week") +
@@ -311,7 +311,7 @@ crimeTime$Frequency[which(crimeTime$Crime_type=='SERIOUS INCIDENTS')] <- rescale
 
 #plotting incident types frequency in respect to month
 ggplot(crimeTime, aes(x=Crime_type, y=Month)) +
-  geom_tile(aes(fill=crimeTime$Frequency)) + scale_x_discrete("Crime type", expand = c(0,0)) +
+  geom_tile(aes(fill=crimeTime$Frequency)) + scale_x_discrete("Type of Incident", expand = c(0,0)) +
   scale_y_discrete("Month", expand = c(0,-2)) +
   scale_fill_gradient("Crime frequency", low = "white", high = "tomato", guide = 'none') +
   theme_bw() + ggtitle("Frequency of Incident type by Month") +
