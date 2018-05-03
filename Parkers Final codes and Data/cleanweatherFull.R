@@ -1,9 +1,23 @@
-load("~/Documents/Math 571 project/Data/weatherFull.Rda")
+#Set path and working directory for loading and saving
+path<-"~/Documents/Math 571 project/Parkers Final codes and Data"
+setwd(path)
+load("weatherFull.Rda")
+
+#Remove attributes with many missing values
 weatherFull$precip_rate<-NULL
 weatherFull$precip_total<-NULL
+weatherFull$precip<-NULL
+weatherFull$heat_index<-NULL
+weatherFull$wind_chill<-NULL
+weatherFull$wind_gust<-NULL
+
+#Add new attributes condition and severity initailzed to NA
 weatherFull[,'condition']<-NA
 weatherFull[,'severity']<-NA
-#Snow, rain, fog, sun, clouds, fog, thunderstorm, Clear, NA
+
+#Condition Buckets: Snow, rain, fog, sun, clouds, fog, thunderstorm, Clear, NA
+#Severity Buckets: Low, Medium, High
+#For loop to get the condition and bucket it for every record
 for (i in 1:length(weatherFull$date)){
   node<-weatherFull$cond[i]
   if (node =='Blowing Snow'){
@@ -151,4 +165,9 @@ for (i in 1:length(weatherFull$date)){
     weatherFull$severity[i]<-('Medium')
   }
 }
+
+#remove records with NAs
+weatherFull<-weatherFull[complete.cases(weatherFull),]
+
+#save the data
 save(weatherFull,file = 'cleanWeatherFull.Rda')
