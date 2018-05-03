@@ -1,22 +1,27 @@
+#rwunderground Package
 library(devtools)
 devtools::install_github('ALShum/rwunderground')
 library(rwunderground)
+#Set Key and Location
 rwunderground::set_api_key('651e75c69a9131c3')
 key=get_api_key()
 location=set_location(territory = 'Illinois', city = 'Chicago')
 
+#function to get the 10 day forecast
 tenDayForecast <- function(){
   forecast <- forecast10day(location = location, key = key)
   forecast <- addCondition(forecast)
   return(forecast)
 }
 
+#function to get the 3 day forcast
 threeDayForecast <- function(){
   forecast <- forecast3day(location = location, key = key)
   forecast <- addCondition(forecast)
   return(forecast)
 }
 
+#Function to add standardized conditions and Severity
 addCondition <- function(forecast){
   forecast$condition<-NA
   forecast$severity<-NA
