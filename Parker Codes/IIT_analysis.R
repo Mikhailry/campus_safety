@@ -6,6 +6,7 @@ library(rpart)
 library(randomForest)
 load("~/Documents/Math 571 project/iit_only.Rda")
 
+#create Model formula from lecture code
 createModelFormula <- function(targetVar, xVars, includeIntercept = TRUE){
   if(includeIntercept){
     modelForm <- as.formula(paste(targetVar, "~", paste(xVars, collapse = ' + ')))
@@ -32,12 +33,15 @@ iit3$SEVERITY<-as.factor(iit3$SEVERITY)
 iit3$SECTOR<-factor(iit3$SECTOR)
 iit3$DAY<-factor(iit3$DAY, ordered = FALSE)
 iit3$MONTH<-factor(iit3$MONTH, ordered = FALSE)
+#Add geohashes
 library(geohash)
 iit3$GeoHash <- apply(iit3,1,
                       function(x) 
                         return(gh_encode(as.double(x[6]), as.double(x[7]), precision=7)))
+#Change to numeric
 iit3$OCCURED<-as.numeric(iit3$OCCURED)
 iit3$GeoHash<-factor(iit3$GeoHash)
+#Remove geohashes that wont be in the test data set
 iit3<-iit3[!as.character(iit3$GeoHash)=='dp3tvz5',]
 iit3<-iit3[!as.character(iit3$GeoHash)=='dp3wjbv',]
 
@@ -52,6 +56,7 @@ train<-iit3[1:(.8*length(iit3$X1)),]
 test<-iit3[(.8*length(iit3$X1)):length(iit3$X1),]
 
 #Logistic Regression and step selection
+targetVar<-'INCIDENT_TYPE2'
 startmodel<-model<-glm(INCIDENT_TYPE2 ~ 1, family=binomial(link='logit'),data=train)
 allVars<-c('TYPE_OF_DATA', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'SECTOR', 'LATITUDE', 'LONGITUDE')
 endmodel<-glm(createModelFormula(targetVar, allVars), family = binomial(link = 'logit'), data=train)
@@ -70,13 +75,8 @@ hist(fitted.results)
 test[,'fitted.results'] <- fitted.results
 
 
-# We output the probabilities, but we want to turn the probabilities into
-# a classification of survived or not. .5 is a reasonable starting cutoff.
-# We will be revisiting this in lecture 11 heavily
+#The best accuracy cutoff was found to be .52
 survived.pred <- ifelse(fitted.results > 0.52,1,0)
-
-mean(survived.pred)
-mean(train[,targetVar])
 
 survived.pred<-as.factor(as.integer(survived.pred))
 levels(survived.pred)<-c('MILD INCIDENTS', 'SERIOUS INCIDENTS')
@@ -128,22 +128,19 @@ xVars<-c('TIME_BUCKET', 'OCCURED', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERIT
 modelForm<-createModelFormula(targetVar,xVars)
 data.rose<-ROSE(modelForm, iit3, seed=1)$data
 
+#order by date and time
 attach(data.rose)
 data.rose<-data.rose[order(OCCURED),]
 detach(data.rose)
 
+#Create new train and test on Rose
 train2<-data.rose[1:(.8*length(iit3$OCCURED)),]
 test2<-data.rose[(.8*length(iit3$OCCURED)):length(iit3$OCCURED),]
 
-#set.seed(34543)
-#inTrain <- createDataPartition(y = data.rose[,targetVar], list = FALSE, p = .8)
-#train2 <- data.rose[inTrain,]
-#test2 <- data.rose[-inTrain,]
-#stopifnot(nrow(train) + nrow(test) == nrow(data.rose))
-
-#xVars<-c('TIME_BUCKET', 'MONTH','DAY', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'GeoHash')
+#Use the same xVars as before but instead of longitude and latitude use geohash
 xVars<-c('TIME_BUCKET', 'MONTH','GeoHash', 'DAY')
 modelForm<-createModelFormula(targetVar,xVars)
+#Log regression formation with Rose
 finalModel<-glm(modelForm, family = binomial(link = 'logit'), data=train2)
 fitted.results <- predict(finalModel
                           ,newdata = test2[,xVars]
@@ -152,11 +149,7 @@ fitted.results <- predict(finalModel
 
 hist(fitted.results)
 
-
-
-# We output the probabilities, but we want to turn the probabilities into
-# a classification of survived or not. .5 is a reasonable starting cutoff.
-# We will be revisiting this in lecture 11 heavily
+#Use .5 as cutoff
 survived.pred <- ifelse(fitted.results > 0.50,1,0)
 
 survived.pred<-as.factor(as.integer(survived.pred))
@@ -170,7 +163,7 @@ confusion <- confusionMatrix(data = survived.pred
 confusion
 #.789 for the rose test data
 
-#TEST original test data
+#TEST original test data for log regression
 fitted.results <- predict(finalModel
                           ,newdata = test[,xVars]
                           # Specifying response means we want the probabilities
@@ -221,12 +214,11 @@ pred<-predict(fit, test)
 head(pred)
 confusionMatrix(pred,test$INCIDENT_TYPE2)
 
-#Future test
+#Future test probability estimation with model
 load("~/Documents/Math 571 project/future_test.rda")
 xVars<-c('TIME_BUCKET', 'MONTH','GEOHASH', 'DAY')
 colnames(future_test)<-c('OCCURED', 'TIME_BUCKET', 'MONTH', 'DAY', 'GeoHash', 'LATITUDE', 'LONGITUDE')
-future_test<-future_test[!as.character(future_test$GeoHash)=='dp3tvz5',]
-future_test<-future_test[!as.character(future_test$GeoHash)=='dp3wjbv',]
+future_test<-future_test[!as.character(future_test$GeoHash)=='dp3tvyw',]
 fitted.results <- predict(finalModel
                           ,newdata = future_test
                           # Specifying response means we want the probabilities
