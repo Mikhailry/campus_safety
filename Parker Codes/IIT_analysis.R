@@ -2,9 +2,9 @@ library(nnet)
 library(MASS)
 library(caret)
 library(e1071)
-load("~/Documents/Math 571 project/IIT_FINAL_AGG.Rda")
+library(rpart)
+library(randomForest)
 load("~/Documents/Math 571 project/iit_only.Rda")
-IIT_FINAL_AGG<-na.omit(IIT_FINAL_AGG)
 
 createModelFormula <- function(targetVar, xVars, includeIntercept = TRUE){
   if(includeIntercept){
@@ -14,81 +14,7 @@ createModelFormula <- function(targetVar, xVars, includeIntercept = TRUE){
   }
   return(modelForm)
 }
-#Categorize as serious or mild crime
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="NON CRIMINAL")] <- "MILD INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PROPERTY CRIME")] <- "SERIOUS INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SUBSTANCE CRIME")] <- "SERIOUS INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="PERSON CRIME")] <- "SERIOUS INCIDENTS"
-IIT_FINAL_AGG$INCIDENT_TYPE2[which(IIT_FINAL_AGG$INCIDENT_TYPE2=="SERIOUS CRIME")] <- "SERIOUS INCIDENTS"
-#Change chr to factor
-IIT_FINAL_AGG$INCIDENT_TYPE1<-as.factor(IIT_FINAL_AGG$INCIDENT_TYPE1)
-IIT_FINAL_AGG$INCIDENT_TYPE2<-as.factor(IIT_FINAL_AGG$INCIDENT_TYPE2)
-IIT_FINAL_AGG$TYPE_OF_DATA<-as.factor(IIT_FINAL_AGG$TYPE_OF_DATA)
-IIT_FINAL_AGG$DAY<-as.factor(IIT_FINAL_AGG$DAY)
-IIT_FINAL_AGG$COND<-as.factor(IIT_FINAL_AGG$COND)
-IIT_FINAL_AGG$STAND_COND<-as.factor(IIT_FINAL_AGG$STAND_COND)
-IIT_FINAL_AGG$SEVERITY<-as.factor(IIT_FINAL_AGG$SEVERITY)
-IIT_FINAL_AGG$SECTOR<-factor(IIT_FINAL_AGG$SECTOR)
 
-
-#sort on time occured
-attach(IIT_FINAL_AGG)
-IIT_FINAL_AGG<-IIT_FINAL_AGG[order(OCCURED),]
-IIT_FINAL_AGG$X1 <- c(1:nrow(IIT_FINAL_AGG))
-detach(IIT_FINAL_AGG)
-
-#split into 80%, 20%
-train<-IIT_FINAL_AGG[1:(.8*length(IIT_FINAL_AGG$X1)),]
-test<-IIT_FINAL_AGG[(.8*length(IIT_FINAL_AGG$X1)):length(IIT_FINAL_AGG$X1),]
-
-#Naive Bayes for full campus
-targetVar<-'SECTOR'
-xVars<-c('INCIDENT_TYPE1', 'TYPE_OF_DATA', 'INCIDENT_TYPE2', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
-xVars<-c('TYPE_OF_DATA', 'INCIDENT_TYPE1', 'DAY', 'HUM')
-#use naive bayes
-modelForm<-createModelFormula(targetVar,xVars)
-naiveBayesModel<-naiveBayes(modelForm, train)
-NB_pred<-predict(naiveBayesModel, test)
-confusionMatrix(NB_pred,test$SECTOR)
-#BEST=.3432
-#No change: SEVERITY and WIND
-
-
-#Off campus
-offcamp<-IIT_FINAL_AGG[IIT_FINAL_AGG$TYPE_OF_DATA=='IIT-AREA',]
-trainOff<-offcamp[1:(.8*length(offcamp$X1)),]
-testOff<-offcamp[(.8*length(offcamp$X1)):length(offcamp$X1),]
-targetVar<-'SECTOR'
-xVars<-c('INCIDENT_TYPE1', 'INCIDENT_TYPE2', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
-xVars<-c( 'INCIDENT_TYPE1', 'DAY')
-#use naive bayes
-modelForm<-createModelFormula(targetVar,xVars)
-naiveBayesModel<-naiveBayes(modelForm, trainOff)
-NB_pred<-predict(naiveBayesModel, testOff)
-confusionMatrix(NB_pred,testOff$SECTOR)
-#BEST=.3401
-#next: 
-#No change: HUM
-
-#On campus
-oncamp<-IIT_FINAL_AGG[IIT_FINAL_AGG$TYPE_OF_DATA=='IIT-CAMPUS',]
-trainOn<-oncamp[1:(.8*length(oncamp$X1)),]
-testOn<-oncamp[(.8*length(oncamp$X1)):length(oncamp$X1),]
-targetVar<-'SECTOR'
-xVars<-c('INCIDENT_TYPE1', 'TYPE_OF_DATA', 'INCIDENT_TYPE2', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP')
-xVars<-c('INCIDENT_TYPE2', 'DAY', 'HUM')
-#use naive bayes
-modelForm<-createModelFormula(targetVar,xVars)
-naiveBayesModel<-naiveBayes(modelForm, trainOn)
-NB_pred<-predict(naiveBayesModel, testOn)
-confusionMatrix(NB_pred,testOn$SECTOR)
-#BEST=.6643
-#next:
-#No change: wind, temp, severity, stand_cond, time_bucket, 
-#Predicts all 11.
-
-
-##IIT ONLY
 #Categorize as serious or mild crime
 iit3$INCIDENT_TYPE2[which(iit3$INCIDENT_TYPE2=="NON CRIMINAL")] <- "MILD INCIDENTS"
 iit3$INCIDENT_TYPE2[which(iit3$INCIDENT_TYPE2=="PROPERTY CRIME")] <- "SERIOUS INCIDENTS"
@@ -125,14 +51,7 @@ detach(iit3)
 train<-iit3[1:(.8*length(iit3$X1)),]
 test<-iit3[(.8*length(iit3$X1)):length(iit3$X1),]
 
-#Logistic Regression
-targetVar<-'INCIDENT_TYPE2'
-xVars<-c('TYPE_OF_DATA', 'DAY', 'HUM')
-modelForm<-createModelFormula(targetVar,xVars)
-model<-glm(modelForm, family=binomial(link='logit'),data=train)
-AIC(model)
-
-#scope models
+#Logistic Regression and step selection
 startmodel<-model<-glm(INCIDENT_TYPE2 ~ 1, family=binomial(link='logit'),data=train)
 allVars<-c('TYPE_OF_DATA', 'MONTH', 'DAY', 'TIME_BUCKET', 'COND', 'STAND_COND', 'SEVERITY', 'TEMP', 'HUM', 'WIND', 'PRECIP', 'SECTOR', 'LATITUDE', 'LONGITUDE')
 endmodel<-glm(createModelFormula(targetVar, allVars), family = binomial(link = 'logit'), data=train)
@@ -179,6 +98,28 @@ plot(prf)
 auc <- performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
 auc
+
+#Decision Tree on data
+xVars<-c('TYPE_OF_DATA', 'SECTOR', 'TIME_BUCKET', 'MONTH','LONGITUDE', 'LATITUDE')
+modelForm<-createModelFormula(targetVar,xVars)
+fit <- rpart(modelForm, train)
+summary(fit)
+pred<-predict(fit, test, type="class")
+confusionMatrix(pred,test$INCIDENT_TYPE2)
+
+#Naive Bayes on data
+targetVar<-'INCIDENT_TYPE2'
+xVars<-c('TIME_BUCKET', 'MONTH')
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, train)
+NB_pred<-predict(naiveBayesModel, test)
+confusionMatrix(NB_pred,test$INCIDENT_TYPE2)
+
+#Random Forest on Data
+fit <- randomForest(modelForm, data=train )
+pred<-predict(fit, test)
+head(pred)
+confusionMatrix(pred,test$INCIDENT_TYPE2)
 
 #ROSE
 library(ROSE)
@@ -256,6 +197,30 @@ auc <- performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
 auc
 
+#Decision Tree with ROSE
+xVars<-c('TIME_BUCKET', 'MONTH','GeoHash', 'DAY')
+modelForm<-createModelFormula(targetVar,xVars)
+fit <- rpart(modelForm, train2)
+summary(fit)
+pred<-predict(fit, test, type="class")
+confusionMatrix(pred,test$INCIDENT_TYPE2)
+
+#Naive Bayes with ROSE
+targetVar<-'INCIDENT_TYPE2'
+xVars<-c('TIME_BUCKET', 'MONTH','GeoHash', 'DAY')
+modelForm<-createModelFormula(targetVar,xVars)
+naiveBayesModel<-naiveBayes(modelForm, train2)
+NB_pred<-predict(naiveBayesModel, test)
+confusionMatrix(NB_pred,test$INCIDENT_TYPE2)
+
+#Random Forest with ROSE
+xVars<-c('TIME_BUCKET', 'MONTH', 'DAY')
+modelForm<-createModelFormula(targetVar,xVars)
+fit <- randomForest(modelForm, data=train2 )
+pred<-predict(fit, test)
+head(pred)
+confusionMatrix(pred,test$INCIDENT_TYPE2)
+
 #Future test
 load("~/Documents/Math 571 project/future_test.rda")
 xVars<-c('TIME_BUCKET', 'MONTH','GEOHASH', 'DAY')
@@ -269,13 +234,3 @@ fitted.results <- predict(finalModel
 
 future_test$PROB<-abs(1-fitted.results)
 save(finalModel, file = 'LogModel.rda')
-
-
-#Naive Bayes with ROSE
-targetVar<-'INCIDENT_TYPE2'
-xVars<-c('TIME_BUCKET', 'MONTH')
-modelForm<-createModelFormula(targetVar,xVars)
-naiveBayesModel<-naiveBayes(modelForm, train2)
-NB_pred<-predict(naiveBayesModel, test2)
-confusionMatrix(NB_pred,test2$INCIDENT_TYPE2)
-#comment
