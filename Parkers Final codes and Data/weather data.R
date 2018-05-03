@@ -30,10 +30,11 @@ setwd(path)
 #save(weather20151114_20170328, file = 'weather3.Rda')
 #save(weather20170329_20180319, file = 'weather4.Rda')
 
-load('weather1.Rda')
-load('weather2.Rda')
-load('weather3.Rda')
-load('weather4.Rda')
+#Can load the data after getting it and saving it.
+#load('weather1.Rda')
+#load('weather2.Rda')
+#load('weather3.Rda')
+#load('weather4.Rda')
 
 #Merge weather data to get full data set and save.
 weatherFull<-rbind(weather20140101_20150426, weather20150427_20151113, weather20151114_20170328, eather20170329_20180319)
