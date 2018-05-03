@@ -3,11 +3,13 @@ library(readr)
 library(lubridate)
 
 #Change path, load data
-Crime_2014toPres_IIT_area <- read_excel("~/Documents/Math 571 project/Mathew_pub_saf/Crime_2014toPres_IIT area.xlsx")
-Crime_2014toPres_UC_area <- read_excel("~/Documents/Math 571 project/Mathew_pub_saf/Crime_2014toPres_UC area.xlsx")
-load("~/Documents/Math 571 project/Data/cleanweatherFull.Rda")
-load("~/Documents/Math 571 project/Data/iitCrime.Rda")
-Uchicago_campus_crimes_cleaned <- read_csv("~/Documents/Math 571 project/Uchicago_campus_crimes_cleaned.csv")
+path<-"~/Documents/Math 571 project/Parkers Final codes and Data"
+setwd("~/Documents/Math 571 project/Parkers Final codes and Data")
+Crime_2014toPres_IIT_area <- read_excel("Crime_2014toPres_IIT area.xlsx")
+Crime_2014toPres_UC_area <- read_excel("Crime_2014toPres_UC area.xlsx")
+load("cleanweatherFull.Rda")
+load("iitCrime.Rda")
+Uchicago_campus_crimes_cleaned <- read_csv("Uchicago_campus_crimes_cleaned.csv")
 
 
 #*******************Crime around the Schools**************************
