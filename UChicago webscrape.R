@@ -174,6 +174,8 @@ data_cpy$`Location Name` <- gsub("\\)", "", data_cpy$`Location Name`)
 
 head(data_cpy$Reported, 100) #4567 levels
 uchicago_data <- data_cpy
+
+#Deleting location address having no incident details
 no_report_values <- data_cpy$`Location Address`[grepl("^No.*", data_cpy$`Location Address`)]
 for (i in no_report_values){
 
@@ -183,16 +185,17 @@ data_cpy$`Location Address` <- factor(data_cpy$`Location Address`)
 nrow(data_cpy)
 
 View(data_cpy)
+#deleting incidents with values as NA
 data_cpy[data_cpy$Incident == 'NA',]
 data_cpy <- data_cpy[!(data_cpy$Incident == 'NA'),]  
+
+#Cleaning the reported and occured dates and times
+
+
 data_cpy <- separate(data_cpy, Reported, c('Date', 'Time', 'AM/PM')
                , sep=' ' 
                , remove=TRUE)
 data_cpy$Time <- paste(data_cpy$Time, data_cpy$`AM/PM` , sep =  " ")
-# Warning messages:
-#   1: Too many values at 2 locations: 352, 3542 
-# 2: Too few values at 2 locations: 59, 2480 
-
 
 head(data_cpy)
 #some tasks to be done in reporting field
@@ -223,6 +226,8 @@ data_cpy[which(data_cpy$Occurred == "Unknown date and time"),]
 
 head(data_cpy)
 
+#Creating regular expressions for date and time
+
 date.pat <- '\\d{1,2}/\\d{1,2}/\\d{2,4}'
 time.pat <- '\\d{1,2}:\\d{1,2} ([AaPp][Mm])'
 x <- "12/31/13 to 10:00 PM to 1:30 AM"
@@ -237,6 +242,8 @@ data_cpy$'Occured Start Date' <- sapply(Occured_char, function(x) return (x[1]))
 data_cpy$'Occured End Date' <- sapply(Occured_char, function(x) return (x[2]))
 head(data_cpy)
 
+#Creating the occured date and time column
+
 Occured_char <- as.character(data_cpy$Occurred)
 Occured_char <- regmatches(Occured_char, gregexpr(time.pat, Occured_char))
 length(Occured_char)
@@ -248,6 +255,8 @@ data_cpy$'Occured End Time' <- sapply(Occured_char, function(x) return (x[2]))
 head(data_cpy)
 uchicago_data <- data_cpy
 data_cpy[which(data_cpy$Occurred == "Unknown date and time"),]
+
+#tagging unknown date and time
 
 data_cpy$`Occured Start Date`[which(data_cpy$Occurred == "Unknown date and time")] <- "Unknown Start Date"
 data_cpy$`Occured End Date`[which(data_cpy$Occurred == "Unknown date and time")] <- "Unknown End Date"
@@ -269,6 +278,7 @@ View(data_cpy)
 uchicago_data <- data_cpy
 write.csv(uchicago_data, file = "Uchicago_campus_crimes_cleaned.csv", fileEncoding = "UTF-8")
 
+#Cleaning the addresses for fetching the lats and lons from Google API
 
 uchicago_data <- read.csv("UC_stand.csv")
 typeof(uchicago_data)
@@ -288,6 +298,8 @@ library(ggmap)
 library(dplyr)
 ordered_freq.addresses <- ordered_freq.addresses[1:(nrow(ordered_freq.addresses) - 1),  ]
 head(ordered_freq.addresses)
+
+#Major changes to be made in the location address
 
 address_mod <- function(location) {
   changes <- gsub("E\\.", "East", location)
@@ -381,7 +393,7 @@ finalized_addresses <- rbind(subset_address_1, subset_address_5)
 View(finalized_addresses)
 
 
-
+#individual changes to be made
 
 finalized_addresses$Location.Address <- gsub("Midway Place", "Midway Plaisance", finalized_addresses$Location.Address)
 finalized_addresses$Location.Address <- gsub("&", "and", finalized_addresses$Location.Address)
@@ -406,80 +418,3 @@ dplyr::filter(finalized_addresses, (grepl("/", finalized_addresses$Location.Addr
 
 write.csv(finalized_addresses, file = "Address dictionary_UChicago.csv", fileEncoding = "UTF-8")
 #dplyr::filter(finalized_addresses, (grepl("//.", finalized_addresses$Location.Address)))
-
-finalized_addresses <- read.csv("Uchicago_campus_crimes_partlycleaned.csv")
-View(finalized_addresses)
-nrow(ordered_freq.addresses) == nrow(finalized_addresses)
-
-geocode("Hyde Park Kimbark")
-
-#install.packages("gsubfn")
-#ibrary(gsubfn)
-
-head(ordered_freq.addresses)
-nrow(ordered_freq.addresses)
-tail(ordered_freq.addresses)
-ordered_freq.addresses_V1 <- ordered_freq.addresses[1:(nrow(ordered_freq.addresses) - 1),  ]
-head(ordered_freq.addresses_V1)
-tail(ordered_freq.addresses_V1)
-simple_addresses <- dplyr::filter(ordered_freq.addresses_V1, !(grepl('between', ordered_freq.addresses_V1$Location.Address) |
-                                                              grepl('to', ordered_freq.addresses_V1$Location.Address)))
-
-stopifnot(length(ordered_address_V1) == nrow(ordered_freq.addresses))
-nrow(simple_addresses)
-
-install.packages("googleway")
-key <- 'AIzaSyAEmFXnK_n2Xw50Di72MY5a8sFj41zAh9Q'
-
-coordinates <- function(x){
-  
-  address <- paste(x,"Chicago IL", sep = " ")
-  
-  temp<-geocode(address, output='all', messaging=TRUE, override_limit=TRUE)
-  
-  while(temp$status == "OVER_QUERY_LIMIT"){
-
-    Sys.sleep(3)
-    
-    temp <- geocode(address, output='all', messaging=TRUE, override_limit=TRUE)
-
-    
-  }
-  
-  if(temp$status == "ZERO_RESULTS")#if there is no result
-    
-  {
-    return(NA)
- 
-  }
- 
-  Latitude <- temp$results[[1]]$geometry$location$lat #returns lat
-  Longitude <- temp$results[[1]]$geometry$location$lng #returns long
-  
-  
-  return(paste(Latitude,Longitude,sep = ","))
-  
-}
-
-coordinates("5815 South Maryland")
-Sys.sleep(2)
-address_ext()
-library(googleway)
-geocode("5815 South Maryland")
-#lat_lon <- google_geocode(address = "5815 South Maryland", key = key)
-#lat_lon$results$geometry$location
-install.packages('devtools')
-library(devtools)
-install.packages('ggplot2')
-devtools::install_github("dkahle/ggmap")
-example <- sapply(simple_addresses$Location.Address[1:2], address_ext)
-
-head(simple_addresses$`lat-lon1`)
-example<- lapply(simple_addresses$Location.Address, coordinates)
-simple_addresses$`lat-lon` <- example
-simple_addresses$`lat-lon` <- NULL
-head(simple_addresses)
-View(simple_addresses)
-tail(simple_addresses, 100)
-
-
