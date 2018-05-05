@@ -1,0 +1,37 @@
+Latitude
+1deg -- 69mi
+? --- 2 mi
+
+0.02898
+
+Longitude
+1 deg == 50.452mi
+? == 2 mi
+
+0.03964
+
+Long
+lat(in decimal degree)*pi/180*69.172
+
+IIT
+Left - -87.66687
+Right - -87.58759
+Up - 41.8603
+Down - 41.8025
+
+UofChicago
+Left - -87.64057
+Right - -87.56129
+Up - 41.81856
+Down - 41.7606
+
+KENT
+Left - -87.66203
+Right - -87.62239
+Up - 41.89363
+Down - 41.86465
+
+
+
+https://www.movable-type.co.uk/scripts/latlong.html
+https://gis.stackexchange.com/questions/142326/calculating-longitude-length-in-miles
