@@ -20,11 +20,11 @@ library("chron")
 library('lubridate')
 
 #loading iit and uc crime data
-load("IIT_FINAL_AGG.rda")
+load("iit_new.rda")
 load("UC_FINAL_AGG.rda")
 
 #renaming df's
-iit <- IIT_FINAL_AGG
+iit <-iit3
 uc <- UC_FINAL_AGG
 
 #minor changes for graphing
@@ -177,7 +177,7 @@ ggplot(ucAreaCrime, aes(x=MONTH)) + geom_bar(fill="steelblue", alpha = .8)+
 #IIT - By weekdays
 #-----------------------------------------------------------
 #plot incidents by weekday for IIT camp + area
-ggplot(iitCrime, aes(x=DAY)) + geom_bar(fill="steelblue", alpha = .8)+ 
+ggplot(iit, aes(x=DAY)) + geom_bar(fill="steelblue", alpha = .8)+ 
   geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust=1.5, position=position_dodge(.9), size=3) +
   labs(title="IIT campus and surrounding area crime incidents by weekdays") + labs(x="Weekday", y="Frequency")
 

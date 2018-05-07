@@ -3,6 +3,7 @@
 #install.packages('ggplot2')
 #install.packages('dplyr')
 #install.packages('shinythemes')
+#install.packages('rsconnect')
 
 
 #loading libraries
@@ -13,17 +14,16 @@ library('shiny')
 library('shinythemes')
 library('geohash')
 library('lubridate')
+library('rsconnect')
 
-#loading iit crime data
+#loading iit crime data for IIT Kent and surrounding area
 load("iitK.rda")
-iitK <- iit #data for iit areas
+iitK <- iit #data for iit kent area
 rm(iit)
 
-#iit
-load("iit_new.rda")
+#loading data for IIT MIES area
+load("IIT_new.rda")
 
-#load("uc.rda")
-#load('iit_new.rda') #data for iit mies only
 iit<-iit3
 rm(iit3)
 
@@ -33,6 +33,7 @@ load("maps.rda")
 #load model
 load('LogModel.rda')
 
+#NOTE: uncomment to re-upload maps
 # #loading maps
 # miesMap <- qmap(location = "Illinois Institute of Technology", zoom=16)
 # miesAreaMap <- qmap(location = "Illinois Institute of Technology", zoom=15)
@@ -71,6 +72,16 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       # Break for visual separation
                       br(),
                       
+                      # sliderInput(inputId='time', label='Time', min=0, max=24,
+                      #             value=12, step=3, round, 
+                      #             ticks=T, animate=T, width),
+                      
+                      selectInput(inputId='time', label='Time', choices=c('All','00-03','03-06', '06-09','09-12','12-15','15-18','18-21','21-00'),
+                                  selected='All', multiple=F, selectize=F),
+                      
+                      # Break for visual separation
+                      br(),
+                      
                       
                       h4("Crime hotspots (hist)"),
                       
@@ -89,9 +100,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       # Date input
                       dateRangeInput(inputId = "date",
                                      label = "Select dates:",
-                                     start = "2014-01-01", end = "2018-01-01",
-                                     startview = "day",
-                                     min = "2014-01-01", max = "2018-01-01"),
+                                     start = "2015-01-01", end = "2018-01-01",
+                                     startview = "year",
+                                     min = "2015-01-01", max = "2018-01-01"),
                       
                       
                       selectInput(inputId = "incidentType",
@@ -126,8 +137,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                          plotOutput(outputId = "iitDensityPlot", height = 600)))
                     
                   )
-                )
-)
+                )#end of sidebar layout
+)#end of UI
 
 # Defining server function required
 server <- function(input, output) {
@@ -206,8 +217,8 @@ server <- function(input, output) {
     #selecting map
     campusMap <- miesAreaMap
     
-#---------------------------------    
-  
+    #---------------------------------    
+    
     extract_month <- function(date) {
       month_val <- months(date)
       #print(month_val)
@@ -222,7 +233,7 @@ server <- function(input, output) {
     }
     
     
-     #function that creates the crime prediction dataset (Need to add lats and lons to the set)
+    #function that creates the crime prediction dataset (Need to add lats and lons to the set)
     crime_prediction_model <- function(date_range) {
       
       sector_datetime <- c()
@@ -233,9 +244,9 @@ server <- function(input, output) {
       sector_typeofarea <- c()
       sector_geohash <- c()
       
-    
-      date_value <- Sys.Date() + days(date_range)
-        
+      
+      date_value <- Sys.Date() + date_range
+      
       #print("yes")
       month_val <- extract_month(date_value)
       day_val <- extract_days(date_value)
@@ -251,9 +262,9 @@ server <- function(input, output) {
       interval <- 60
       end <- start + as.difftime(0.95, units="days")
       sector_datetime<- c(sector_datetime, rep(seq(from=start, by=interval*180, to=end),132))
-        #print(sector_datetime)
-        #print(length(sector_datetime))
-        
+      #print(sector_datetime)
+      #print(length(sector_datetime))
+      
       test_dataset <- data.frame(as.numeric(sector_datetime),as.factor(sector_timebucket),as.factor(sector_month), as.factor(sector_day), as.factor(sector_geohash))
       test_dataset[,3] <- ordered(test_dataset[,3])
       test_dataset[,4] <- ordered(test_dataset[,4])
@@ -280,6 +291,10 @@ server <- function(input, output) {
       future.data$seriousInc <- ifelse(fitted.results > 0.70,1,0)
       future.data <- future.data[!(future.data$seriousInc == 0),]
       #density of crimes for the selected area
+      if (input$time!='All'){
+        future.data <- future.data[future.data$TIME_BUCKET==input$time,]
+      }
+      
       campusMap + stat_density2d(aes(x = LONGITUDE, y = LATITUDE, fill = ..level.., alpha = ..level..), 
                                  bins = 4, data = future.data, geom = "polygon") + scale_alpha(guide = 'none') + 
         geom_vline(xintercept=seq(-87.6330, -87.6170, by=0.008)) +
@@ -300,6 +315,9 @@ server <- function(input, output) {
       future.data$seriousInc <- ifelse(fitted.results > 0.70,1,0)
       future.data <- future.data[!(future.data$seriousInc == 0),]
       #density of crimes for the selected area
+      if (input$time!='All'){
+        future.data <- future.data[future.data$TIME_BUCKET==input$time,]
+      }
       campusMap + stat_density2d(aes(x = LONGITUDE, y = LATITUDE, fill = ..level.., alpha = ..level..), bins = 4, data = future.data, geom = "polygon") + 
         scale_alpha(guide = 'none') + 
         geom_vline(xintercept=seq(-87.6330, -87.6170, by=0.008)) +
@@ -320,6 +338,9 @@ server <- function(input, output) {
       future.data$seriousInc <- ifelse(fitted.results > 0.70,1,0)
       future.data <- future.data[!(future.data$seriousInc == 0),]
       #density of crimes for the selected area
+      if (input$time!='All'){
+        future.data <- future.data[future.data$TIME_BUCKET==input$time,]
+      }
       campusMap + stat_density2d(aes(x = LONGITUDE, y = LATITUDE, fill = ..level.., alpha = ..level..), bins = 4, data = future.data, geom = "polygon") + 
         scale_alpha(guide = 'none') +
         geom_vline(xintercept=seq(-87.6330, -87.6170, by=0.008)) +
@@ -327,7 +348,7 @@ server <- function(input, output) {
       
     }
     
-#------------------------------------------
+    #------------------------------------------
     # miesAreaMap + stat_density2d(aes(x = LONGITUDE, y = LATITUDE, fill = ..level.., alpha = ..level..), 
     #                            bins = 3, data = future_test, geom = "polygon") + scale_alpha(guide = 'none') + 
     #   geom_vline(xintercept=seq(-87.6330, -87.6170, by=0.008)) +
@@ -338,7 +359,7 @@ server <- function(input, output) {
     # crimeDatesSel <- future.data %>%
     #   filter(OCCURED >= as.POSIXct(input$date[1]) & OCCURED <= as.POSIXct(input$date[2]))
     
-  
+    
     
   })#end of renderPLot
   

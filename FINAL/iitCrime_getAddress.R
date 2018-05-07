@@ -9,14 +9,14 @@ library('dplyr')
 #load cleaned iitCrime data 'iitCrime'
 load('iitCrime.rda')
 
-#removing multiple spaces between words in 'Location' and 'Notes'
-iitCrime$Location <- rm_white(iitCrime$Location)
-iitCrime$Notes <- rm_white(iitCrime$Notes)
-
 #loading dictionaries of IIT buildings, parkings
 iitDictBld <- read.csv('iit_dict_buildings.csv')
 iitDictLots <- read.csv('iit_dict_parkings.csv')
 iitDictNS <- read.csv('iit_dict_ns_streets.csv')
+
+#removing multiple spaces between words in 'Location' and 'Notes'
+iitCrime$Location <- rm_white(iitCrime$Location)
+iitCrime$Notes <- rm_white(iitCrime$Notes)
 
 #trimming spaces from both ends
 iitDictBld <- sapply(iitDictBld, str_trim)
@@ -51,7 +51,7 @@ sapply(iitDictBld$building, lookupBld)
 naAddress <- iitCrime[which(is.na(iitCrime$Address)),]
 
 #after the 1st search for address:
-#matched: 1039 of 1604 obs
+#matched: 1038 of 1604 obs
 #not matched: 566 of 1604 obs
 #----------------------------------------------------------------
 
@@ -264,3 +264,6 @@ iitCrime$Address<-(as.factor(iitCrime$Address))
 iitCrime <- select(iitCrime, Incident, Location, Address, Latitude, Longitude, Occured:Notes)
 
 summary(iitCrime)
+
+#save iitCrime as .rda
+save(iitCrime, file = "iitCrime.rda")
