@@ -1,4 +1,4 @@
-#loading library for web scrapping
+#loading libraries for web scrapping and data munging
 library(rvest) #webscraping: extract pieces from html
 library(lubridate) #manipulating dates
 library(httr) #to check if page exists
@@ -196,7 +196,7 @@ content2posts <- function(content2xtr2){
 posts<-unlist(lapply(content2xtr2, content2posts))
 
 #save posts as .rda
-save(posts, file = "posts.rda")
+#save(posts, file = "posts.rda")
 #load(posts)
 
 #output - a vector of all posts for the timeframe (each post in a single string):
@@ -309,11 +309,11 @@ datesNoTime <- iitCleaned2$Occured[datesNoTimeInd]
 #convert data type of 'occured' variable
 iitCleaned2$Occured <- as.POSIXct(iitCleaned2$Occured,tz="America/Chicago", format="%m/%d/%Y %I:%M %p")
 
-#add time stamp
-iitCleaned2$Occured[datesNoTimeInd] <- as.POSIXct(paste(datesNoTime, "00:00 am"), format="%m/%d/%Y %H:%M %p")
+# #add time stamp
+# iitCleaned2$Occured[datesNoTimeInd] <- as.POSIXct(paste(datesNoTime, "00:00 am"), format="%m/%d/%Y %H:%M %p")
 
-#replace empty dates with "1/1/1970 00:00 am"
-iitCleaned2$Occured[emptyDatesInd] <- as.POSIXct("1/1/1970 00:00 am", format="%m/%d/%Y %H:%M %p")
+# #replace empty dates with "1/1/1970 00:00 am"
+# iitCleaned2$Occured[emptyDatesInd] <- as.POSIXct("1/1/1970 00:00 am", format="%m/%d/%Y %H:%M %p")
 
 #check if number of incidents matches
 stopifnot(nrow(iitCleaned2)==nIncedents | (nrow(iitCleaned2) > nIncedents*0.95 & nrow(iitCleaned2) < nIncedents*1.05))
