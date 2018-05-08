@@ -62,7 +62,6 @@ You can then use commands within the package to set the key, set the location, a
 ### Crime Portal Data
 The crime data for the surrounding areas of IIT (Kent and Meis) was obtained from the Chicago Data Portal. The bounds was a 2 mile grid centered at the Mies Campus and a 1 mile grid centered at Kent Campus. The latitude bounds were 41.8603, 41.8025 longitude bounds were -87.66687, -87.58759 for Meis campus, and, latitude bounds were 41.89363, 41.86465 and longitude bounds were -87.66203, -87.62239 for Kent campus. Using these bounds all the data from 2015 onwards was pulled from the crime data portal to incorporate it into further steps including EDA and the prediction model.
 
-![map split](/images/mapSplit.png)
 
 ## Data Preparation and Munging
 ### Web-scraping data (get_web_data.R)
